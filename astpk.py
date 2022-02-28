@@ -53,6 +53,7 @@ def deploy(overlay):
     os.system(f"echo '{etc}' > /.etc/etc-{tmp}/astpk.d/astpk-cetc")
     switchtmp()
     os.system(f"cp --reflink=auto -r /.var/var-{etc}/* /.overlays/overlay-{tmp}/var/")
+    os.system(f"cp --reflink=auto -r /.var/var-{etc}/* /var")
     os.system(f"btrfs sub set-default /.overlays/overlay-{tmp}")
 
 def clone(overlay):
