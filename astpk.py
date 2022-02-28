@@ -34,6 +34,13 @@ def write_tree(tree):
     fsfile = open(fstreepath,"w")
     fsfile.write(to_write)
 
+def return_children(tree, id):
+    children = []
+    par = (anytree.find(tree, filter_=lambda node: node.name in (id)))
+    for child in anytree.PreOrderIter(par):
+        children.append(child.name)
+    return (children)
+
 def get_overlay():
     coverlay = open("/etc/astpk.d/astpk-coverlay","r")
     overlay = coverlay.readline()
@@ -93,6 +100,15 @@ def clone(overlay):
     os.system(f"btrfs sub snap -r /.var/var-{overlay} /.var/var-{i}")
     os.system(f"btrfs sub snap -r /.boot/boot-{overlay} /.boot/boot-{i}")
     add_node_to_parent(fstree,overlay,i)
+    write_tree(fstree)
+
+def clone_as_tree(overlay):
+    i = findnew()
+    os.system(f"btrfs sub snap -r /.overlays/overlay-{overlay} /.overlays/overlay-{i}")
+    os.system(f"btrfs sub snap -r /.etc/etc-{overlay} /.etc/etc-{i}")
+    os.system(f"btrfs sub snap -r /.var/var-{overlay} /.var/var-{i}")
+    os.system(f"btrfs sub snap -r /.boot/boot-{overlay} /.boot/boot-{i}")
+    append_base_tree(fstree,i)
     write_tree(fstree)
 
 def new_overlay():
@@ -155,11 +171,18 @@ def pac(overlay,arg):
     posttrans(overlay)
 
 def delete(overlay):
-    os.system(f"btrfs sub del /.boot/boot-{overlay}")
-    os.system(f"btrfs sub del /.etc/etc-{overlay}")
-    os.system(f"btrfs sub del /.var/var-{overlay}")
-    os.system(f"btrfs sub del /.overlays/overlay-{overlay}")
+#    os.system(f"btrfs sub del /.boot/boot-{overlay}")
+#    os.system(f"btrfs sub del /.etc/etc-{overlay}")
+#    os.system(f"btrfs sub del /.var/var-{overlay}")
+#    os.system(f"btrfs sub del /.overlays/overlay-{overlay}")
+    children = return_children(fstree,overlay)
+    for child in children:
+        os.system(f"btrfs sub del /.boot/boot-{child}")
+        os.system(f"btrfs sub del /.etc/etc-{child}")
+        os.system(f"btrfs sub del /.var/var-{child}")
+        os.system(f"btrfs sub del /.overlays/overlay-{child}")
     remove_node(fstree,overlay)
+    write_tree(fstree)
 
 def prepare_base():
     unchr()
