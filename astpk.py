@@ -27,9 +27,8 @@ def add_node_to_parent(tree, id, val):
     par = (anytree.find(tree, filter_=lambda node: (str(node.name)+"x") in (str(id)+"x")))
     add = anytree.Node(val, parent=par)
 
-def add_node_to_level(tree,id, val):
+def add_node_to_level(tree,id, val): # Broken
     par = (anytree.find(tree, filter_=lambda node: (str(node.name) + "x") in (str(id) + "x")))
-    print(par)
     spar = str(par).split("/")
     nspar = (spar[len(spar)-2])
     npar = (anytree.find(tree, filter_=lambda node: (str(node.name) + "x") in (str(nspar) + "x")))
@@ -38,7 +37,7 @@ def add_node_to_level(tree,id, val):
 def remove_node(tree, id):
     par = (anytree.find(tree, filter_=lambda node: (str(node.name)+"x") in (str(id)+"x")))
     par.parent = None
-
+    print(par)
 def write_tree(tree):
     exporter = DictExporter()
     to_write = exporter.export(tree)
@@ -376,10 +375,10 @@ def main(args):
             install(args[args.index(arg)+1],args[args.index(arg)+2])
         elif arg == "cinstall" or arg == "ci":
             cinstall(overlay,args[args.index(arg)+1])
-        elif arg == "extend-branch" or arg == "branch":
+        elif arg == "add-branch" or arg == "branch":
             extend_branch(args[args.index(arg)+1])
-        elif arg == "clone-branch" or arg == "cbranch":
-            clone_branch(args[args.index(arg)+1])
+        elif arg == "clone" or arg == "tree-clone":
+            clone_as_tree(args[args.index(arg)+1])
         elif arg == "list" or arg == "l":
             ls_overlay()
         elif arg == "mk-img" or arg == "img":
