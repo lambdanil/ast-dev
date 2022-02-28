@@ -150,6 +150,7 @@ def posttrans(overlay):
     os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/etc/* /.etc/etc-chr")
     os.system(f"mkdir -p /.var/var-chr/lib/systemd")
     os.system(f"mkdir -p /.var/var-chr/lib/pacman")
+    os.system(f"btrfs sub snap /var /.var/var-chr")
     os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/var/lib/systemd/* /.var/var-chr/lib/systemd")
     os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/var/lib/pacman/* /.var/var-chr/lib/pacman")
     os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/boot/* /.boot/boot-chr")
@@ -157,7 +158,12 @@ def posttrans(overlay):
     os.system(f"btrfs sub del /.var/var-{etc}")
     os.system(f"btrfs sub del /.boot/boot-{etc}")
     os.system(f"btrfs sub snap -r /.etc/etc-chr /.etc/etc-{etc}")
-    os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{etc}")
+    os.system(f"btrfs sub create /.var/var-{etc}")
+    os.system(f"mkdir -p /.var/var-{etc}/lib/systemd")
+    os.system(f"mkdir -p /.var/var-{etc}/lib/pacman")
+    os.system(f"cp --reflink=auto -r /.var/var-chr/lib/systemd /.var/var-{etc}")
+    os.system(f"cp --reflink=auto -r /.var/var-chr/lib/pacman /.var/var-{etc}")
+#    os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{etc}")
     os.system(f"btrfs sub snap -r /.boot/boot-chr /.boot/boot-{etc}")
 
 def upgrade(overlay):
