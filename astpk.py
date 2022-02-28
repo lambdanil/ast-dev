@@ -3,6 +3,7 @@ import os
 import sys
 import subprocess
 from anytree.importer import DictImporter
+from anytree.exporter import DictExporter
 import os
 
 args = list(sys.argv)
@@ -21,11 +22,11 @@ def append_base_tree(tree,val):
     add = anytree.Node(val, parent=tree.root)
 
 def add_node_to_parent(tree, id, val):
-    par = (anytree.find(tree, filter_=lambda node: node.name in (id)))
+    par = (anytree.find(tree, filter_=lambda node: (node.name+"x") in (id+"x")))
     add = anytree.Node(val, parent=par)
 
 def remove_node(tree, id):
-    par = (anytree.find(tree, filter_=lambda node: node.name in (id)))
+    par = (anytree.find(tree, filter_=lambda node: (node.name+"x") in (id+"x")))
     par.parent = None
 
 def write_tree(tree):
@@ -36,7 +37,7 @@ def write_tree(tree):
 
 def return_children(tree, id):
     children = []
-    par = (anytree.find(tree, filter_=lambda node: node.name in (id)))
+    par = (anytree.find(tree, filter_=lambda node: (node.name+"x") in (id+"x")))
     for child in anytree.PreOrderIter(par):
         children.append(child.name)
     return (children)
