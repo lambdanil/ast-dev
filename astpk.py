@@ -126,10 +126,15 @@ def delete(overlay):
 def prepare_base():
     unchr()
     os.system(f"btrfs sub snap /.base/base /.overlays/overlay-chr")
+    os.system(f"rm -rf /.overlays/overlay-chr/var")
+    os.system(f"btrfs sub snap /.base/var /.var/var-chr")
+    os.system(f"btrfs sub snap /.base/var /.overlays/overlay-chr/var")
 
 def posttrans_base():
     os.system("umount /.overlays/overlay-chr")
     os.system(f"btrfs sub del /.base/base")
+    os.system(f"btrfs sub del /.base/var")
+    os.system(f"btrfs sub snap -r /.overlays/overlay-chr/var /.base/base")
     os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.base/base")
 
 def update_base():
