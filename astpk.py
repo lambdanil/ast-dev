@@ -315,9 +315,9 @@ def switchtmp():
     mount = get_tmp()
     part = get_part()
     if "tmp0" in mount:
-        mount = "tmp"
+        tmp = "tmp"
     else:
-        mount = "tmp0"
+        tmp = "tmp0"
     os.system(f"mkdir /etc/mnt")
     os.system(f"mkdir /etc/mnt/boot")
     os.system(f"mount {part} -o subvol=@boot /etc/mnt/boot")
