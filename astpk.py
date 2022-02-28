@@ -38,6 +38,8 @@ def deploy(overlay):
     os.system(f"btrfs sub snap /.var/var-{overlay} /.var/var-{tmp}")
     os.system(f"btrfs sub snap /.boot/boot-{overlay} /.boot/boot-{tmp}")
     os.system(f"mkdir /.overlays/overlay-{tmp}/etc")
+    os.system(f"rm -rf /.overlays/overlay-{tmp}/var")
+    os.system(f"mkdir /.overlays/overlay-{tmp}/var")
     os.system(f"mkdir /.overlays/overlay-{tmp}/var")
     os.system(f"mkdir /.overlays/overlay-{tmp}/boot")
     os.system(f"cp --reflink=auto -r /.etc/etc-{etc}/* /.overlays/overlay-{tmp}/etc")
@@ -79,6 +81,7 @@ def chroot(overlay):
 
 def unchr():
     os.system(f"btrfs sub del /.etc/etc-chr")
+    os.system(f"btrfs sub del /.var/var-chr/var")
     os.system(f"btrfs sub del /.var/var-chr")
     os.system(f"btrfs sub del /.boot/boot-chr")
     os.system(f"btrfs sub del /.overlays/overlay-chr")
@@ -135,6 +138,7 @@ def prepare(overlay):
     os.system(f"btrfs sub snap /.overlays/overlay-{overlay} /.overlays/overlay-chr")
     os.system(f"btrfs sub snap /.etc/etc-{overlay} /.etc/etc-chr")
 #    os.system(f"btrfs sub snap /.var/var-{overlay} /.var/var-chr")
+    os.system(f"btrfs sub del /.var/var-chr/")
     os.system(f"btrfs sub snap /var /.var/var-chr")
     os.system(f"btrfs sub snap /.boot/boot-{overlay} /.boot/boot-chr")
     os.system(f"cp -r --reflink=auto /.etc/etc-chr/* /.overlays/overlay-chr/etc")
@@ -150,6 +154,7 @@ def posttrans(overlay):
     os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/etc/* /.etc/etc-chr")
     os.system(f"mkdir -p /.var/var-chr/lib/systemd")
     os.system(f"mkdir -p /.var/var-chr/lib/pacman")
+    os.system(f"btrfs sub del /.var/var-chr")
     os.system(f"btrfs sub snap /var /.var/var-chr")
     os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/var/lib/systemd/* /.var/var-chr/lib/systemd")
     os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/var/lib/pacman/* /.var/var-chr/lib/pacman")
