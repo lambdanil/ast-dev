@@ -5,6 +5,7 @@ import ast
 import subprocess
 from anytree.importer import DictImporter
 from anytree.exporter import DictExporter
+import anytree
 import os
 
 args = list(sys.argv)
