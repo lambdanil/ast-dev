@@ -115,7 +115,6 @@ def clone(overlay):
 def sync_tree(treename):
     unchr()
     children = return_children(fstree, treename)
-    children.remove(treename)
     for child in children:
         os.system(f"btrfs sub snap /.overlays/overlay-{child} /.overlays/overlay-chr")
         os.system(f"btrfs sub snap /.var/var-{child} /.var/var-chr")
