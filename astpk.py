@@ -27,11 +27,13 @@ def add_node_to_parent(tree, id, val):
     par = (anytree.find(tree, filter_=lambda node: (str(node.name)+"x") in (str(id)+"x")))
     add = anytree.Node(val, parent=par)
 
-def return_parent(tree,id):
-    par = str(anytree.find(tree, filter_=lambda node: (str(node.name) + "x") in (str(id) + "x")))
-    spar = par.split("/")
-    spar.remove(spar[len(spar)-1])
-    return("/".join(spar) + "')")
+def add_node_to_level(tree,id, val):
+    par = (anytree.find(tree, filter_=lambda node: (str(node.name) + "x") in (str(id) + "x")))
+    print(par)
+    spar = str(par).split("/")
+    nspar = (spar[len(spar)-2])
+    npar = (anytree.find(tree, filter_=lambda node: (str(node.name) + "x") in (str(nspar) + "x")))
+    add = anytree.Node(val, parent=npar)
 
 def remove_node(tree, id):
     par = (anytree.find(tree, filter_=lambda node: (str(node.name)+"x") in (str(id)+"x")))
@@ -126,8 +128,7 @@ def clone_branch(overlay):
     os.system(f"btrfs sub snap -r /.etc/etc-{overlay} /.etc/etc-{i}")
     os.system(f"btrfs sub snap -r /.var/var-{overlay} /.var/var-{i}")
     os.system(f"btrfs sub snap -r /.boot/boot-{overlay} /.boot/boot-{i}")
-    parent = return_parent(fstree,i)
-    add_node_to_parent(fstree,overlay,parent)
+    add_node_to_level(fstree,overlay,i)
     write_tree(fstree)
 
 def clone_as_tree(overlay):
