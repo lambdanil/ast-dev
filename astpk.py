@@ -80,16 +80,17 @@ def deploy(overlay):
         tmp = "tmp0"
     etc = overlay
     os.system(f"btrfs sub snap /.overlays/overlay-{overlay} /.overlays/overlay-{tmp}")
+    os.system(f"btrfs sub snap /.etc/etc-{overlay} /.etc/etc-{tmp}")
 #    os.system(f"btrfs sub snap /.var/var-{overlay} /.var/var-{tmp}")
 #    os.system(f"btrfs sub snap /var /.var/var-{tmp}")
     os.system(f"btrfs sub create /.var/var-{tmp}")
     os.system(f"cp --reflink=auto -r /.var/var-{etc}/* /.var/var-{tmp}")
     os.system(f"btrfs sub snap /.boot/boot-{overlay} /.boot/boot-{tmp}")
-    os.system(f"btrfs sub snap /.etc/etc-{etc} /.etc/etc-{tmp}")
     os.system(f"mkdir /.overlays/overlay-{tmp}/etc")
     os.system(f"rm -rf /.overlays/overlay-{tmp}/var")
 #    os.system(f"mkdir /.overlays/overlay-{tmp}/var")
     os.system(f"mkdir /.overlays/overlay-{tmp}/boot")
+    os.system(f"cp --reflink=auto -r /.etc/etc-{etc}/* /.overlays/overlay-{tmp}/etc")
     os.system(f"btrfs sub snap /var /.overlays/overlay-{tmp}/var")
     os.system(f"cp --reflink=auto -r /.boot/boot-{etc}/* /.overlays/overlay-{tmp}/boot")
     os.system(f"echo '{overlay}' > /.overlays/overlay-{tmp}/etc/astpk.d/astpk-coverlay")
@@ -97,9 +98,6 @@ def deploy(overlay):
     os.system(f"echo '{overlay}' > /.etc/etc-{tmp}/astpk.d/astpk-coverlay")
     os.system(f"echo '{etc}' > /.etc/etc-{tmp}/astpk.d/astpk-cetc")
     switchtmp()
-    os.system(f"cp --reflink=auto -r /.etc/etc-{etc}/* /.overlays/overlay-{tmp}/etc")
-    os.system(f"cp --reflink=auto -r /.etc/etc-{etc}/* /.etc/etc-{tmp}/")
-#    os.system(f"btrfs sub snap /.etc/etc-{etc} /.etc/etc-{tmp}")
     os.system(f"cp --reflink=auto -r /.var/var-{etc}/* /.overlays/overlay-{tmp}/var/")
     os.system(f"cp --reflink=auto -r /.var/var-{etc}/lib/pacman/* /var/lib/pacman/")
     os.system(f"cp --reflink=auto -r /.var/var-{etc}/lib/systemd/* /var/lib/systemd/")
@@ -113,22 +111,6 @@ def clone(overlay):
     os.system(f"btrfs sub snap -r /.boot/boot-{overlay} /.boot/boot-{i}")
     add_node_to_parent(fstree,overlay,i)
     write_tree(fstree)
-
-def sync_tree(treename):
-    unchr()
-    children = return_children(fstree, treename)
-    for child in children:
-        os.system(f"btrfs sub snap /.overlays/overlay-{child} /.overlays/overlay-chr")
-        os.system(f"btrfs sub snap /.var/var-{child} /.var/var-chr")
-        os.system(f"cp --reflink=auto -r /.var/var-{treename}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/")
-        os.system(f"cp --reflink=auto -r /.var/var-{treename}/lib/systemd/* /.var/var-chr/lib/systemd/")
-        os.system(f"cp --reflink=auto -r /.overlays/overlay-{treename}/* /.overlays/overlay-chr/")
-        os.system(f"btrfs sub del /.overlays/overlay-{child}")
-        os.system(f"btrfs sub del /.var/var-{child}")
-        os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{child}")
-        os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{child}")
-        os.system(f"btrfs sub del /.overlays/overlay-chr")
-        os.system(f"btrfs sub del /.var/var-chr")
 
 def extend_branch(overlay):
     i = findnew()
@@ -147,6 +129,22 @@ def clone_branch(overlay):
     os.system(f"btrfs sub snap -r /.boot/boot-{overlay} /.boot/boot-{i}")
     add_node_to_level(fstree,overlay,i)
     write_tree(fstree)
+
+def sync_tree(treename):
+    unchr()
+    children = return_children(fstree, treename)
+    for child in children:
+        os.system(f"btrfs sub snap /.overlays/overlay-{child} /.overlays/overlay-chr")
+        os.system(f"btrfs sub snap /.var/var-{child} /.var/var-chr")
+        os.system(f"cp --reflink=auto -r /.var/var-{treename}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/")
+        os.system(f"cp --reflink=auto -r /.var/var-{treename}/lib/systemd/* /.var/var-chr/lib/systemd/")
+        os.system(f"cp --reflink=auto -r /.overlays/overlay-{treename}/* /.overlays/overlay-chr/")
+        os.system(f"btrfs sub del /.overlays/overlay-{child}")
+        os.system(f"btrfs sub del /.var/var-{child}")
+        os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{child}")
+        os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{child}")
+        os.system(f"btrfs sub del /.overlays/overlay-chr")
+        os.system(f"btrfs sub del /.var/var-chr")
 
 def clone_as_tree(overlay):
     i = findnew()
@@ -424,7 +422,7 @@ def main(args):
             update_base()
         elif arg == "sync" or arg == "tree-sync":
             sync_tree(args[args.index(arg)+1])
-        elif arg == "tree":
+        elif arg  == "tree":
             show_fstree()
         elif (arg == args[1]):
             print("Operation not found.")
