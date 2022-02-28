@@ -146,6 +146,8 @@ def prepare(overlay):
     os.system(f"btrfs sub snap /var /.var/var-chr")
     os.system(f"rm -rf /.overlays/overlay-chr/var")
     os.system(f"btrfs sub snap /var /.overlays/overlay-chr/var")
+    os.system(f"cp -r --reflink=auto /.var/var-{overlay}/* /.overlays/overlay-chr/var/")
+    os.system(f"cp -r --reflink=auto /.var/var-{overlay}/* /.var/var-chr/")
     os.system(f"btrfs sub snap /.boot/boot-{overlay} /.boot/boot-chr")
     os.system(f"cp -r --reflink=auto /.etc/etc-chr/* /.overlays/overlay-chr/etc")
 #    os.system(f"cp -r --reflink=auto /.var/var-chr/* /.overlays/overlay-chr/var")
