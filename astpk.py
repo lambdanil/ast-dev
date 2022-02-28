@@ -96,6 +96,7 @@ def untmp():
         tmp = "tmp"
     else:
         tmp = "tmp0"
+    os.system(f"btrfs sub del /.overlays/overlay-{tmp}/var")
     os.system(f"btrfs sub del /.overlays/overlay-{tmp}")
     os.system(f"btrfs sub del /.etc/etc-{tmp}")
     os.system(f"btrfs sub del /.var/var-{tmp}")
@@ -144,7 +145,7 @@ def prepare(overlay):
 #    os.system(f"btrfs sub snap /.var/var-{overlay} /.var/var-chr")
     os.system(f"btrfs sub del /.var/var-chr/")
     os.system(f"btrfs sub snap /var /.var/var-chr")
-    os.system(f"rm -rf /.overlays/overlay-chr/var")
+#    os.system(f"rm -rf /.overlays/overlay-chr/var")
     os.system(f"btrfs sub snap /var /.overlays/overlay-chr/var")
     os.system(f"cp -r --reflink=auto /.var/var-{overlay}/* /.overlays/overlay-chr/var/")
     os.system(f"cp -r --reflink=auto /.var/var-{overlay}/* /.var/var-chr/")
