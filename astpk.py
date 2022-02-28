@@ -2,9 +2,38 @@
 import os
 import sys
 import subprocess
+from anytree.importer import DictImporter
+import os
 
 args = list(sys.argv)
-# etc-update, remove, rm-overlay, pac
+
+
+def import_tree_file(treename):
+    treefile = open(treename,"r")
+    tree = ast.literal_eval(treefile.readline())
+    return(tree)
+
+def print_tree(tree):
+    for pre, fill, node in anytree.RenderTree(tree):
+        print("%s%s" % (pre, node.name))
+
+def append_base_tree(tree,val):
+    add = anytree.Node(val, parent=tree.root)
+
+def add_node_to_parent(tree, id, val):
+    par = (anytree.find(tree, filter_=lambda node: node.name in (id)))
+    add = anytree.Node(val, parent=par)
+
+def remove_node(tree, id):
+    par = (anytree.find(tree, filter_=lambda node: node.name in (id)))
+    par.parent = None
+
+def write_tree(tree):
+    exporter = DictExporter()
+    to_write = exporter.export(tree)
+    fsfile = open(fstreepath,"w")
+    fsfile.write(to_write)
+
 def get_overlay():
     coverlay = open("/etc/astpk.d/astpk-coverlay","r")
     overlay = coverlay.readline()
@@ -63,6 +92,8 @@ def clone(overlay):
     os.system(f"btrfs sub snap -r /.etc/etc-{overlay} /.etc/etc-{i}")
     os.system(f"btrfs sub snap -r /.var/var-{overlay} /.var/var-{i}")
     os.system(f"btrfs sub snap -r /.boot/boot-{overlay} /.boot/boot-{i}")
+    add_node_to_parent(fstree,overlay,i)
+    write_tree(fstree)
 
 def new_overlay():
     i = findnew()
@@ -70,6 +101,12 @@ def new_overlay():
     os.system(f"btrfs sub snap -r /.etc/etc-0 /.etc/etc-{i}")
     os.system(f"btrfs sub snap -r /.var/var-0 /.var/var-{i}")
     os.system(f"btrfs sub snap -r /.boot/boot-0 /.boot/boot-{i}")
+#    append_base_tree(fstree, i)
+    add_node_to_parent(fstree, fstree.root, i)
+    write_tree(fstree)
+
+def show_fstree():
+    print_tree(fstree)
 
 def update_etc():
     tmp = get_tmp()
@@ -122,6 +159,7 @@ def delete(overlay):
     os.system(f"btrfs sub del /.etc/etc-{overlay}")
     os.system(f"btrfs sub del /.var/var-{overlay}")
     os.system(f"btrfs sub del /.overlays/overlay-{overlay}")
+    remove_node(fstree,overlay)
 
 def prepare_base():
     unchr()
@@ -271,6 +309,12 @@ def mk_img(imgpath):
 def main(args):
     overlay = get_overlay()
     etc = overlay
+    importer = DictImporter()
+    exporter = DictExporter()
+    global fstree
+    global fstreepath
+    fstreepath = str("/var/astpk/fstree")
+    fstree = importer.import_(import_tree_file("/var/astpk/fstree"))
     for arg in args:
         if arg == "new-overlay" or arg == "new":
             new_overlay()
@@ -307,6 +351,8 @@ def main(args):
             pac(str(" ").join(args_2))
         elif arg == "base-update" or arg == "bu":
             update_base()
+        elif arg  == "tree":
+            show_fstree()
         elif (arg == args[1]):
             print("Operation not found.")
 
