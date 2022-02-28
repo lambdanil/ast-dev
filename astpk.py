@@ -84,7 +84,6 @@ def chroot(overlay):
 
 def unchr():
     os.system(f"btrfs sub del /.etc/etc-chr")
-    os.system(f"btrfs sub del /.var/var-chr/var")
     os.system(f"btrfs sub del /.var/var-chr")
     os.system(f"btrfs sub del /.boot/boot-chr")
     os.system(f"btrfs sub del /.overlays/overlay-chr/var")
@@ -143,10 +142,11 @@ def prepare(overlay):
     os.system(f"btrfs sub snap /.overlays/overlay-{overlay} /.overlays/overlay-chr")
     os.system(f"btrfs sub snap /.etc/etc-{overlay} /.etc/etc-chr")
 #    os.system(f"btrfs sub snap /.var/var-{overlay} /.var/var-chr")
-    os.system(f"btrfs sub del /.var/var-chr/")
     os.system(f"btrfs sub snap /var /.var/var-chr")
 #    os.system(f"rm -rf /.overlays/overlay-chr/var")
+    os.system("rm -rf /.overlays/overlay-chr/var")
     os.system(f"btrfs sub snap /var /.overlays/overlay-chr/var")
+    os.system(f"chmod 0755 /.overlays/overlay-chr/var")
     os.system(f"cp -r --reflink=auto /.var/var-{overlay}/* /.overlays/overlay-chr/var/")
     os.system(f"cp -r --reflink=auto /.var/var-{overlay}/* /.var/var-chr/")
     os.system(f"btrfs sub snap /.boot/boot-{overlay} /.boot/boot-chr")
