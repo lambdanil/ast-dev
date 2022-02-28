@@ -24,11 +24,17 @@ def append_base_tree(tree,val):
     add = anytree.Node(val, parent=tree.root)
 
 def add_node_to_parent(tree, id, val):
-    par = (anytree.find(tree, filter_=lambda node: (node.name+"x") in (id+"x")))
+    par = (anytree.find(tree, filter_=lambda node: (str(node.name)+"x") in (str(id)+"x")))
     add = anytree.Node(val, parent=par)
 
+def return_parent(tree,id):
+    par = str(anytree.find(tree, filter_=lambda node: (str(node.name) + "x") in (str(id) + "x")))
+    spar = par.split("/")
+    spar.remove(spar[len(spar)-1])
+    return("/".join(spar) + "')")
+
 def remove_node(tree, id):
-    par = (anytree.find(tree, filter_=lambda node: (node.name+"x") in (id+"x")))
+    par = (anytree.find(tree, filter_=lambda node: (str(node.name)+"x") in (str(id)+"x")))
     par.parent = None
 
 def write_tree(tree):
@@ -39,7 +45,7 @@ def write_tree(tree):
 
 def return_children(tree, id):
     children = []
-    par = (anytree.find(tree, filter_=lambda node: (node.name+"x") in (id+"x")))
+    par = (anytree.find(tree, filter_=lambda node: (str(node.name)+"x") in (str(id)+"x")))
     for child in anytree.PreOrderIter(par):
         children.append(child.name)
     return (children)
@@ -103,6 +109,25 @@ def clone(overlay):
     os.system(f"btrfs sub snap -r /.var/var-{overlay} /.var/var-{i}")
     os.system(f"btrfs sub snap -r /.boot/boot-{overlay} /.boot/boot-{i}")
     add_node_to_parent(fstree,overlay,i)
+    write_tree(fstree)
+
+def extend_branch(overlay):
+    i = findnew()
+    os.system(f"btrfs sub snap -r /.overlays/overlay-{overlay} /.overlays/overlay-{i}")
+    os.system(f"btrfs sub snap -r /.etc/etc-{overlay} /.etc/etc-{i}")
+    os.system(f"btrfs sub snap -r /.var/var-{overlay} /.var/var-{i}")
+    os.system(f"btrfs sub snap -r /.boot/boot-{overlay} /.boot/boot-{i}")
+    add_node_to_parent(fstree,overlay,i)
+    write_tree(fstree)
+
+def clone_branch(overlay):
+    i = findnew()
+    os.system(f"btrfs sub snap -r /.overlays/overlay-{overlay} /.overlays/overlay-{i}")
+    os.system(f"btrfs sub snap -r /.etc/etc-{overlay} /.etc/etc-{i}")
+    os.system(f"btrfs sub snap -r /.var/var-{overlay} /.var/var-{i}")
+    os.system(f"btrfs sub snap -r /.boot/boot-{overlay} /.boot/boot-{i}")
+    parent = return_parent(fstree,i)
+    add_node_to_parent(fstree,overlay,parent)
     write_tree(fstree)
 
 def clone_as_tree(overlay):
@@ -350,8 +375,10 @@ def main(args):
             install(args[args.index(arg)+1],args[args.index(arg)+2])
         elif arg == "cinstall" or arg == "ci":
             cinstall(overlay,args[args.index(arg)+1])
-        elif arg == "clone":
-            clone(args[args.index(arg)+1])
+        elif arg == "extend-branch" or arg == "branch":
+            extend_branch(args[args.index(arg)+1])
+        elif arg == "clone-branch" or arg == "cbranch":
+            clone_branch(args[args.index(arg)+1])
         elif arg == "list" or arg == "l":
             ls_overlay()
         elif arg == "mk-img" or arg == "img":
