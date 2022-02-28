@@ -33,7 +33,7 @@ def main(args):
     if efi:
         os.system("mkdir /mnt/boot/efi")
         os.system(f"mount {args[3]} /mnt/boot/efi")
-    os.system("pacstrap /mnt base vim linux-lts linux-firmware dhcpcd btrfs-progs python3 git arch-install-scripts networkmanager grub")
+    os.system("pacstrap /mnt base vim linux-lts linux-firmware python-anytree dhcpcd btrfs-progs python3 git arch-install-scripts networkmanager grub")
     mntdirs_n = mntdirs
     mntdirs_n.remove("")
     os.system(f"echo '{args[1]} / btrfs subvol=@,compress=zstd,noatime,ro 0 0' > /mnt/etc/fstab")
@@ -78,7 +78,7 @@ def main(args):
     os.system("arch-chroot /mnt btrfs sub set-default /.overlays/overlay-tmp")
     os.system("arch-chroot /mnt passwd")
     os.system("arch-chroot /mnt systemctl enable dhcpcd")
-    os.system("mkdir -p /mnt/var/astpk/fstree")
+    os.system("mkdir -p /mnt/var/astpk/")
     os.system("echo {'name': 'root'} > /mnt/var/astpk/fstree")
     os.system(f"arch-chroot /mnt grub-install {args[2]}")
     os.system(f"arch-chroot /mnt grub-mkconfig {args[2]} -o /boot/grub/grub.cfg")
