@@ -112,6 +112,23 @@ def clone(overlay):
     add_node_to_parent(fstree,overlay,i)
     write_tree(fstree)
 
+def sync_tree(treename):
+    unchr()
+    children = return_children(fstree, treename)
+    children.remove(treename)
+    for child in children:
+        os.system(f"btrfs sub snap /.overlays/overlay-{child} /.overlays/overlay-chr")
+        os.system(f"btrfs sub snap /.var/var-{child} /.var/var-chr")
+        os.system(f"cp --reflink=auto -r /.var/var-{treename}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/")
+        os.system(f"cp --reflink=auto -r /.var/var-{treename}/lib/systemd/* /.var/var-chr/lib/systemd/")
+        os.system(f"cp --reflink=auto -r /.overlays/overlay-{treename}/* /.overlays/overlay-chr/")
+        os.system(f"btrfs sub del /.overlays/overlay-{child}")
+        os.system(f"btrfs sub del /.var/var-{child}")
+        os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{child}")
+        os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{child}")
+        os.system(f"btrfs sub del /.overlays/overlay-chr")
+        os.system(f"btrfs sub del /.var/var-chr")
+
 def extend_branch(overlay):
     i = findnew()
     os.system(f"btrfs sub snap -r /.overlays/overlay-{overlay} /.overlays/overlay-{i}")
@@ -404,7 +421,9 @@ def main(args):
             pac(str(" ").join(args_2))
         elif arg == "base-update" or arg == "bu":
             update_base()
-        elif arg  == "tree":
+        elif arg == "sync" or arg == "tree-sync":
+            sync_tree(args[args.index(arg)+1])
+        elif arg == "tree":
             show_fstree()
         elif (arg == args[1]):
             print("Operation not found.")
