@@ -80,7 +80,6 @@ def deploy(overlay):
         tmp = "tmp0"
     etc = overlay
     os.system(f"btrfs sub snap /.overlays/overlay-{overlay} /.overlays/overlay-{tmp}")
-    os.system(f"btrfs sub snap /.etc/etc-{overlay} /.etc/etc-{tmp}")
 #    os.system(f"btrfs sub snap /.var/var-{overlay} /.var/var-{tmp}")
 #    os.system(f"btrfs sub snap /var /.var/var-{tmp}")
     os.system(f"btrfs sub create /.var/var-{tmp}")
@@ -90,7 +89,6 @@ def deploy(overlay):
     os.system(f"rm -rf /.overlays/overlay-{tmp}/var")
 #    os.system(f"mkdir /.overlays/overlay-{tmp}/var")
     os.system(f"mkdir /.overlays/overlay-{tmp}/boot")
-    os.system(f"cp --reflink=auto -r /.etc/etc-{etc}/* /.overlays/overlay-{tmp}/etc")
     os.system(f"btrfs sub snap /var /.overlays/overlay-{tmp}/var")
     os.system(f"cp --reflink=auto -r /.boot/boot-{etc}/* /.overlays/overlay-{tmp}/boot")
     os.system(f"echo '{overlay}' > /.overlays/overlay-{tmp}/etc/astpk.d/astpk-coverlay")
@@ -98,9 +96,11 @@ def deploy(overlay):
     os.system(f"echo '{overlay}' > /.etc/etc-{tmp}/astpk.d/astpk-coverlay")
     os.system(f"echo '{etc}' > /.etc/etc-{tmp}/astpk.d/astpk-cetc")
     switchtmp()
+    os.system(f"cp --reflink=auto -r /.etc/etc-{etc}/* /.overlays/overlay-{tmp}/etc")
+    os.system(f"cp --reflink=auto -r /.etc/etc-{etc}/* /.etc/etc-{tmp}/")
     os.system(f"cp --reflink=auto -r /.var/var-{etc}/* /.overlays/overlay-{tmp}/var/")
-    os.system(f"cp --reflink=auto -r /.var/var-{etc}/lib/pacman /var")
-    os.system(f"cp --reflink=auto -r /.var/var-{etc}/lib/systemd /var")
+    os.system(f"cp --reflink=auto -r /.var/var-{etc}/lib/pacman/* /var/lib/pacman/")
+    os.system(f"cp --reflink=auto -r /.var/var-{etc}/lib/systemd/* /var/lib/systemd/")
     os.system(f"btrfs sub set-default /.overlays/overlay-{tmp}")
 
 def clone(overlay):
