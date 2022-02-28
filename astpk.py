@@ -35,7 +35,7 @@ def write_tree(tree):
     exporter = DictExporter()
     to_write = exporter.export(tree)
     fsfile = open(fstreepath,"w")
-    fsfile.write(to_write)
+    fsfile.write(str(to_write))
 
 def return_children(tree, id):
     children = []

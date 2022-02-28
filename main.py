@@ -79,7 +79,7 @@ def main(args):
     os.system("arch-chroot /mnt passwd")
     os.system("arch-chroot /mnt systemctl enable dhcpcd")
     os.system("mkdir -p /mnt/var/astpk/")
-    os.system("echo {\\'name\\': \\'root\\'} > /mnt/var/astpk/fstree")
+    os.system("echo {\\'name\\': \\'root\\', \\'children\\': [{\\'name\\': \\'0\\'}]} > /mnt/var/astpk/fstree")
     os.system(f"arch-chroot /mnt grub-install {args[2]}")
     os.system(f"arch-chroot /mnt grub-mkconfig {args[2]} -o /boot/grub/grub.cfg")
     os.system("sed -i '0,/subvol=@/{s,subvol=@,subvol=@.overlays/overlay-tmp,}' /mnt/boot/grub/grub.cfg")
