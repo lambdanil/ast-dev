@@ -46,13 +46,13 @@ def deploy(overlay):
     os.system(f"mkdir /.overlays/overlay-{tmp}/boot")
     os.system(f"cp --reflink=auto -r /.etc/etc-{etc}/* /.overlays/overlay-{tmp}/etc")
     os.system(f"btrfs sub snap /var /.overlays/overlay-{tmp}/var")
-    os.system(f"cp --reflink=auto -r /.var/var-{etc}/* /.overlays/overlay-{tmp}/var")
     os.system(f"cp --reflink=auto -r /.boot/boot-{etc}/* /.overlays/overlay-{tmp}/boot")
     os.system(f"echo '{overlay}' > /.overlays/overlay-{tmp}/etc/astpk.d/astpk-coverlay")
     os.system(f"echo '{etc}' > /.overlays/overlay-{tmp}/etc/astpk.d/astpk-cetc")
     os.system(f"echo '{overlay}' > /.etc/etc-{tmp}/astpk.d/astpk-coverlay")
     os.system(f"echo '{etc}' > /.etc/etc-{tmp}/astpk.d/astpk-cetc")
     switchtmp()
+    os.system(f"cp --reflink=auto -r /.var/var-{etc}/* /.overlays/overlay-{tmp}/var/")
     os.system(f"btrfs sub set-default /.overlays/overlay-{tmp}")
 
 def clone(overlay):
