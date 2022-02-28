@@ -42,7 +42,7 @@ def deploy(overlay):
     os.system(f"btrfs sub snap /.boot/boot-{overlay} /.boot/boot-{tmp}")
     os.system(f"mkdir /.overlays/overlay-{tmp}/etc")
     os.system(f"rm -rf /.overlays/overlay-{tmp}/var")
-    os.system(f"mkdir /.overlays/overlay-{tmp}/var")
+#    os.system(f"mkdir /.overlays/overlay-{tmp}/var")
     os.system(f"mkdir /.overlays/overlay-{tmp}/var")
     os.system(f"mkdir /.overlays/overlay-{tmp}/boot")
     os.system(f"cp --reflink=auto -r /.etc/etc-{etc}/* /.overlays/overlay-{tmp}/etc")
