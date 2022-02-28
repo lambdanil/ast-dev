@@ -161,8 +161,8 @@ def posttrans(overlay):
     os.system(f"btrfs sub create /.var/var-{etc}")
     os.system(f"mkdir -p /.var/var-{etc}/lib/systemd")
     os.system(f"mkdir -p /.var/var-{etc}/lib/pacman")
-    os.system(f"cp --reflink=auto -r /.var/var-chr/lib/systemd /.var/var-{etc}")
-    os.system(f"cp --reflink=auto -r /.var/var-chr/lib/pacman /.var/var-{etc}")
+    os.system(f"cp --reflink=auto -r /.var/var-chr/lib/systemd/* /.var/var-{etc}/lib/systemd")
+    os.system(f"cp --reflink=auto -r /.var/var-chr/lib/pacman/* /.var/var-{etc}/lib/pacman")
 #    os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{etc}")
     os.system(f"btrfs sub snap -r /.boot/boot-chr /.boot/boot-{etc}")
 
