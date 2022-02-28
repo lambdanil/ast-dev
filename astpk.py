@@ -153,7 +153,6 @@ def posttrans(overlay):
     etc = overlay
     os.system("umount /.overlays/overlay-chr")
     os.system(f"btrfs sub del /.overlays/overlay-{overlay}")
-    os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{overlay}")
     os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/etc/* /.etc/etc-chr")
     os.system(f"mkdir -p /.var/var-chr/lib/systemd")
     os.system(f"mkdir -p /.var/var-chr/lib/pacman")
@@ -173,6 +172,8 @@ def posttrans(overlay):
     os.system(f"cp --reflink=auto -r /.var/var-chr/lib/pacman/* /.var/var-{etc}/lib/pacman")
 #    os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{etc}")
     os.system(f"btrfs sub snap -r /.boot/boot-chr /.boot/boot-{etc}")
+    os.system(f"btrfs sub del /.overlays/overlay-chr/var")
+    os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{overlay}")
 
 def upgrade(overlay):
     prepare(overlay)
