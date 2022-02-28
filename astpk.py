@@ -87,6 +87,7 @@ def unchr():
     os.system(f"btrfs sub del /.var/var-chr/var")
     os.system(f"btrfs sub del /.var/var-chr")
     os.system(f"btrfs sub del /.boot/boot-chr")
+    os.system(f"btrfs sub del /.overlays/overlay-chr/var")
     os.system(f"btrfs sub del /.overlays/overlay-chr")
 
 def untmp():
@@ -157,6 +158,7 @@ def posttrans(overlay):
     os.system(f"btrfs sub del /.overlays/overlay-{overlay}")
     os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/etc/* /.etc/etc-chr")
     os.system(f"btrfs sub del /.var/var-chr")
+    os.system(f"btrfs sub create /.var/var-chr")
     os.system(f"mkdir -p /.var/var-chr/lib/systemd")
     os.system(f"mkdir -p /.var/var-chr/lib/pacman")
     os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/var/lib/systemd/* /.var/var-chr/lib/systemd")
