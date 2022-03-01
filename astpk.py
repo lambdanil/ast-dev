@@ -180,22 +180,15 @@ def clone_branch(overlay):
 def sync_tree(treename):
     unchr()
     #children = return_children(fstree, treename) # Get children of tree
-    update_branches = []
-    children = [node.name for node in anytree.LevelOrderIter(fstree)]
-    print(children)
-    print("fstree", fstree)
-    ctreename = anytree.Node(fstree)
-    print_tree(ctreename)
+    children = [node.name for node in anytree.LevelOrderIter(treename)]
     for child in children: # This runs for the tree itself, fix later (doesn't cause issues)
         par = (anytree.find(fstree, filter_=lambda node: (str(node.name) + "x") in (str(child) + "x")))
         spar = str(par).split("/")
-        print(spar)
         nspar = (spar[len(spar)-2])
-        print(nspar)
         npar = (anytree.find(fstree, filter_=lambda node: (str(node.name) + "x") in (str(nspar) + "x"))) # Maybe works
-        print(str(npar), treename, fstree)
+        #print(npar)
         if (f"{treename}'") in str(npar):
-            update_branches.append(child)
+            print(child)
             os.system(f"btrfs sub snap /.overlays/overlay-{child} /.overlays/overlay-chr")
             os.system(f"btrfs sub snap /.var/var-{child} /.var/var-chr")
             os.system(f"cp --reflink=auto -r /.var/var-{npar}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/")
