@@ -182,11 +182,11 @@ def sync_tree(treename):
     #children = return_children(fstree, treename) # Get children of tree
     children = [node.name for node in anytree.LevelOrderIter(fstree)]
     for child in children: # This runs for the tree itself, fix later (doesn't cause issues)
-        par = (anytree.find(fstree, filter_=lambda node: (str(node.name) + "x") in (str(child) + "x")))
+        par = anytree.Node(anytree.find(fstree, filter_=lambda node: (str(node.name) + "x") in (str(child) + "x")))
         print(str(par))
         spar = str(par).split("/")
         nspar = (spar[len(spar)-2])
-        npar = (anytree.find(fstree, filter_=lambda node: (str(node.name) + "x") in (str(nspar) + "x"))) # Maybe works
+        npar = anytree.Node(anytree.find(fstree, filter_=lambda node: (str(node.name) + "x") in (str(nspar) + "x"))) # Maybe works
         #print(npar)
         if (f"{treename}'") in str(npar):
             print(child)
