@@ -180,7 +180,7 @@ def sync_tree(treename):
     unchr()
     #children = return_children(fstree, treename) # Get children of tree
     update_branches = []
-    children = [node.name for node in anytree.LevelOrderIter(fstree)]
+    children = [str(node.name) for node in anytree.LevelOrderIter(fstree)]
     print(children)
     for child in children: # This runs for the tree itself, fix later (doesn't cause issues)
         par = (anytree.find(fstree, filter_=lambda node: (str(node.name) + "x") in (str(child) + "x")))
