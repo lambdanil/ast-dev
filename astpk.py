@@ -62,7 +62,7 @@ def append_base_tree(tree,val):
 def add_node_to_parent(tree, id, val):
     par = (anytree.find(tree, filter_=lambda node: (str(node.name)+"x") in (str(id)+"x"))) # Not entirely sure how the lambda stuff here works, but it does ¯\_(ツ)_/¯
     add = anytree.Node(val, parent=par)
-
+    
 def add_node_to_level(tree,id, val): # Broken, likely useless, probably remove later
     par = (anytree.find(tree, filter_=lambda node: (str(node.name) + "x") in (str(id) + "x")))
     spar = str(par).split("/")
@@ -74,7 +74,6 @@ def add_node_to_level(tree,id, val): # Broken, likely useless, probably remove l
 def remove_node(tree, id):
     par = (anytree.find(tree, filter_=lambda node: (str(node.name)+"x") in (str(id)+"x")))
     par.parent = None
-    print(par)
 
 # Save tree to file
 def write_tree(tree):
@@ -179,13 +178,18 @@ def clone_branch(overlay):
 # Sync tree and all it's overlays TODO: make recursive instead
 def sync_tree(treename):
     unchr()
-    children = return_children(fstree, treename) # Get children of tree
+    #children = return_children(fstree, treename) # Get children of tree
+    children = [node.name for node in LevelOrderIter(f)]
     for child in children: # This runs for the tree itself, fix later (doesn't cause issues)
+        par = (anytree.find(tree, filter_=lambda node: (str(node.name) + "x") in (str(child) + "x")))
+        spar = str(par).split("/")
+        nspar = (spar[len(spar)-2])
+        npar = (anytree.find(tree, filter_=lambda node: (str(node.name) + "x") in (str(nspar) + "x"))) # Maybe works
         os.system(f"btrfs sub snap /.overlays/overlay-{child} /.overlays/overlay-chr")
         os.system(f"btrfs sub snap /.var/var-{child} /.var/var-chr")
-        os.system(f"cp --reflink=auto -r /.var/var-{treename}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/")
-        os.system(f"cp --reflink=auto -r /.var/var-{treename}/lib/systemd/* /.var/var-chr/lib/systemd/")
-        os.system(f"cp --reflink=auto -r /.overlays/overlay-{treename}/* /.overlays/overlay-chr/")
+        os.system(f"cp --reflink=auto -r /.var/var-{npar}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/")
+        os.system(f"cp --reflink=auto -r /.var/var-{npar}/lib/systemd/* /.var/var-chr/lib/systemd/")
+        os.system(f"cp --reflink=auto -r /.overlays/overlay-{npar}/* /.overlays/overlay-chr/")
         os.system(f"btrfs sub del /.overlays/overlay-{child}")
         os.system(f"btrfs sub del /.var/var-{child}")
         os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{child}")
