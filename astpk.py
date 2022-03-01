@@ -180,7 +180,7 @@ def clone_branch(overlay):
 def sync_tree(treename):
     unchr()
     #children = return_children(fstree, treename) # Get children of tree
-    children = [node.name for node in anytree.LevelOrderIter(treename)]
+    children = [node.name for node in anytree.LevelOrderIter(fstree)]
     for child in children: # This runs for the tree itself, fix later (doesn't cause issues)
         par = (anytree.find(fstree, filter_=lambda node: (str(node.name) + "x") in (str(child) + "x")))
         spar = str(par).split("/")
