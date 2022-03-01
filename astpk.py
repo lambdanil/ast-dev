@@ -180,6 +180,8 @@ def clone_branch(overlay):
 def sync_tree(treename):
     unchr()
     #children = return_children(fstree, treename) # Get children of tree
+    importer = DictImporter() # Dict importer
+    fstree = importer.import_(import_tree_file("/var/astpk/fstree"))
     children = [node.name for node in anytree.LevelOrderIter(fstree)]
     print((anytree.LevelOrderIter(fstree)))
     for child in children: # This runs for the tree itself, fix later (doesn't cause issues)
