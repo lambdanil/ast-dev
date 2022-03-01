@@ -60,9 +60,8 @@ def append_base_tree(tree,val):
 
 # Add child to node
 def add_node_to_parent(tree, id, val):
-
     par = (anytree.find(tree, filter_=lambda node: (str(node.name)+"x") in (str(id)+"x"))) # Not entirely sure how the lambda stuff here works, but it does ¯\_(ツ)_/¯
-    add = anytree.Node(str(val), parent=par)
+    add = anytree.Node(val, parent=par)
     
 def add_node_to_level(tree,id, val): # Broken, likely useless, probably remove later
     par = (anytree.find(tree, filter_=lambda node: (str(node.name) + "x") in (str(id) + "x")))
@@ -84,9 +83,23 @@ def write_tree(tree):
     fsfile.write(str(to_write))
 
 # Return list of children for node
+#def return_all(tree, id):
+#    children = []
+#    par = (anytree.find(tree, filter_=lambda node: (str(node.name)+"x") in (str(id)+"x")))
+#    for child in anytree.PreOrderIter(par):
+#        children.append(child.name)
+#    return (children)
+
 def return_children(tree, id):
     children = []
-    par = (anytree.find(tree, filter_=lambda node: (str(node.name)+"x") in (str(id)+"x")))
+    par = (anytree.find(tree, filter_=lambda node: str(id+"x") in str(node.name+"x")))
+    for child in anytree.PreOrderIter(par):
+        children.append(child.name)
+    return (children)
+
+def return_only_children(tree, id):
+    children = []
+    par = (anytree.find(tree, filter_=lambda node: (str(node.children)+"x") in (str(id)+"x")))
     for child in anytree.PreOrderIter(par):
         children.append(child.name)
     return (children)
@@ -179,31 +192,19 @@ def clone_branch(overlay):
 # Sync tree and all it's overlays TODO: make recursive instead
 def sync_tree(treename):
     unchr()
-    #children = return_children(fstree, treename) # Get children of tree
-    importer = DictImporter() # Dict importer
-    fstree = importer.import_(import_tree_file("/var/astpk/fstree"))
-    children = [node.name for node in anytree.LevelOrderIter(fstree)]
-    print((anytree.LevelOrderIter(fstree)))
+    children = return_children(fstree, treename) # Get children of tree
     for child in children: # This runs for the tree itself, fix later (doesn't cause issues)
-        par = anytree.Node(anytree.find(fstree, filter_=lambda node: (str(node.name) + "x") in (str(child) + "x")))
-        print(str(par))
-        spar = str(par).split("/")
-        nspar = (spar[len(spar)-2])
-        npar = anytree.Node(anytree.find(fstree, filter_=lambda node: (str(node.name) + "x") in (str(nspar) + "x"))) # Maybe works
-        #print(npar)
-        if (f"{treename}'") in str(npar):
-            print(child)
-            os.system(f"btrfs sub snap /.overlays/overlay-{child} /.overlays/overlay-chr")
-            os.system(f"btrfs sub snap /.var/var-{child} /.var/var-chr")
-            os.system(f"cp --reflink=auto -r /.var/var-{npar}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/")
-            os.system(f"cp --reflink=auto -r /.var/var-{npar}/lib/systemd/* /.var/var-chr/lib/systemd/")
-            os.system(f"cp --reflink=auto -r /.overlays/overlay-{npar}/* /.overlays/overlay-chr/")
-            os.system(f"btrfs sub del /.overlays/overlay-{child}")
-            os.system(f"btrfs sub del /.var/var-{child}")
-            os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{child}")
-            os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{child}")
-            os.system(f"btrfs sub del /.overlays/overlay-chr")
-            os.system(f"btrfs sub del /.var/var-chr")
+        os.system(f"btrfs sub snap /.overlays/overlay-{child} /.overlays/overlay-chr")
+        os.system(f"btrfs sub snap /.var/var-{child} /.var/var-chr")
+        os.system(f"cp --reflink=auto -r /.var/var-{treename}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/")
+        os.system(f"cp --reflink=auto -r /.var/var-{treename}/lib/systemd/* /.var/var-chr/lib/systemd/")
+        os.system(f"cp --reflink=auto -r /.overlays/overlay-{treename}/* /.overlays/overlay-chr/")
+        os.system(f"btrfs sub del /.overlays/overlay-{child}")
+        os.system(f"btrfs sub del /.var/var-{child}")
+        os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{child}")
+        os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{child}")
+        os.system(f"btrfs sub del /.overlays/overlay-chr")
+        os.system(f"btrfs sub del /.var/var-chr")
 
 # Clone tree
 def clone_as_tree(overlay):

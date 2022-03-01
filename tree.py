@@ -63,15 +63,13 @@ def return_children(tree, id):
         children.append(child.name)
     return (children)
 
-def tree_crawl(treename):
-    children = [node.name for node in anytree.LevelOrderIter(treename)]
-    for child in children: # This runs for the tree itself, fix later (doesn't cause issues)
-        par = (anytree.find(treename, filter_=lambda node: (str(node.name) + "x") in (str(child) + "x")))
-        spar = str(par).split("/")
-        nspar = (spar[len(spar)-2])
-        npar = (anytree.find(treename, filter_=lambda node: (str(node.name) + "x") in (str(nspar) + "x"))) # Maybe works
-        print(npar,child)
 
+def return_only_children(tree, id):
+    children = []
+    par = (anytree.find(tree, filter_=lambda node: "0" in node.name, maxlevel=2))
+    for child in anytree.PreOrderIter(par):
+        children.append(child.name)
+    return (children)
 
 # Main function
 def main(args):
@@ -80,17 +78,20 @@ def main(args):
     global fstree # Currently these are global variables, fix sometime
     global fstreepath # ---
     fstreepath = str("tree.txt") # Path to fstree file
-    fstree = importer.import_(import_tree_file(fstreepath)) # Import fstree file
+    print("fs",importer.import_(import_tree_file(fstreepath)))
+    fstree = (importer.import_(import_tree_file(fstreepath))) # Import fstree file
     append_base_tree(fstree, "test")
-    add_node_to_parent(fstree, "test", "test2")
-    add_node_to_parent(fstree, "test", "test3")
-    add_node_to_parent(fstree, "test2", "test6")
-    add_node_to_parent(fstree, "test2", "test5")
-    append_base_tree(fstree, "test10")
-    add_node_to_parent(fstree, "test10", "test8")
+    #add_node_to_parent(fstree, "test", "test2")
+    #add_node_to_parent(fstree, "test", "test3")
+    #add_node_to_parent(fstree, "test2", "test6")
+    add_node_to_parent(fstree, "4", "test5")
+    #append_base_tree(fstree, "test10")
+    add_node_to_parent(fstree, "0", "1")
+    print(exporter.export(fstree))
+    print("fffs",str(fstree))
     print_tree(fstree)
-    tree_crawl(fstree)
-    print(return_children(fstree,"root"))
+    print(return_children(fstree,"0"))
+    print(return_only_children(fstree,"0"))
     # Recognize argument and call appropriate function
 
 main(args)
