@@ -186,6 +186,7 @@ def sync_tree(treename):
         spar = str(par).split("/")
         nspar = (spar[len(spar)-2])
         npar = (anytree.find(fstree, filter_=lambda node: (str(node.name) + "x") in (str(nspar) + "x"))) # Maybe works
+        print(str(npar), treename)
         if (f"{treename}'") in str(npar):
             update_branches.append(child)
             os.system(f"btrfs sub snap /.overlays/overlay-{child} /.overlays/overlay-chr")
