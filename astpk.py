@@ -60,8 +60,9 @@ def append_base_tree(tree,val):
 
 # Add child to node
 def add_node_to_parent(tree, id, val):
+
     par = (anytree.find(tree, filter_=lambda node: (str(node.name)+"x") in (str(id)+"x"))) # Not entirely sure how the lambda stuff here works, but it does ¯\_(ツ)_/¯
-    add = anytree.Node(val, parent=par)
+    add = anytree.Node(str(val), parent=par)
     
 def add_node_to_level(tree,id, val): # Broken, likely useless, probably remove later
     par = (anytree.find(tree, filter_=lambda node: (str(node.name) + "x") in (str(id) + "x")))
@@ -180,14 +181,16 @@ def sync_tree(treename):
     unchr()
     #children = return_children(fstree, treename) # Get children of tree
     update_branches = []
-    children = [str(node.name) for node in anytree.LevelOrderIter(fstree)]
+    children = [node.name for node in anytree.LevelOrderIter(fstree)]
     print(children)
     print("fstree", fstree)
     print_tree(fstree)
     for child in children: # This runs for the tree itself, fix later (doesn't cause issues)
         par = (anytree.find(fstree, filter_=lambda node: (str(node.name) + "x") in (str(child) + "x")))
         spar = str(par).split("/")
+        print(spar)
         nspar = (spar[len(spar)-2])
+        print(nspar)
         npar = (anytree.find(fstree, filter_=lambda node: (str(node.name) + "x") in (str(nspar) + "x"))) # Maybe works
         print(str(npar), treename, fstree)
         if (f"{treename}'") in str(npar):
