@@ -182,6 +182,7 @@ def sync_tree(treename):
     update_branches = []
     children = [str(node.name) for node in anytree.LevelOrderIter(fstree)]
     print(children)
+    print("fstree", fstree)
     for child in children: # This runs for the tree itself, fix later (doesn't cause issues)
         par = (anytree.find(fstree, filter_=lambda node: (str(node.name) + "x") in (str(child) + "x")))
         spar = str(par).split("/")
