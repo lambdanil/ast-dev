@@ -179,23 +179,26 @@ def clone_branch(overlay):
 def sync_tree(treename):
     unchr()
     #children = return_children(fstree, treename) # Get children of tree
-    children = [node.name for node in anytree.LevelOrderIter(treename)]
+    update_branches = []
+    children = [node.name for node in anytree.LevelOrderIter(fstree)]
     for child in children: # This runs for the tree itself, fix later (doesn't cause issues)
-        par = (anytree.find(treename, filter_=lambda node: (str(node.name) + "x") in (str(child) + "x")))
+        par = (anytree.find(fstree, filter_=lambda node: (str(node.name) + "x") in (str(child) + "x")))
         spar = str(par).split("/")
         nspar = (spar[len(spar)-2])
-        npar = (anytree.find(treename, filter_=lambda node: (str(node.name) + "x") in (str(nspar) + "x"))) # Maybe works
-        os.system(f"btrfs sub snap /.overlays/overlay-{child} /.overlays/overlay-chr")
-        os.system(f"btrfs sub snap /.var/var-{child} /.var/var-chr")
-        os.system(f"cp --reflink=auto -r /.var/var-{npar}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/")
-        os.system(f"cp --reflink=auto -r /.var/var-{npar}/lib/systemd/* /.var/var-chr/lib/systemd/")
-        os.system(f"cp --reflink=auto -r /.overlays/overlay-{npar}/* /.overlays/overlay-chr/")
-        os.system(f"btrfs sub del /.overlays/overlay-{child}")
-        os.system(f"btrfs sub del /.var/var-{child}")
-        os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{child}")
-        os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{child}")
-        os.system(f"btrfs sub del /.overlays/overlay-chr")
-        os.system(f"btrfs sub del /.var/var-chr")
+        npar = (anytree.find(fstree, filter_=lambda node: (str(node.name) + "x") in (str(nspar) + "x"))) # Maybe works
+        if (f"{treename}'") in str(npar):
+            update_branches.append(child)
+            os.system(f"btrfs sub snap /.overlays/overlay-{child} /.overlays/overlay-chr")
+            os.system(f"btrfs sub snap /.var/var-{child} /.var/var-chr")
+            os.system(f"cp --reflink=auto -r /.var/var-{npar}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/")
+            os.system(f"cp --reflink=auto -r /.var/var-{npar}/lib/systemd/* /.var/var-chr/lib/systemd/")
+            os.system(f"cp --reflink=auto -r /.overlays/overlay-{npar}/* /.overlays/overlay-chr/")
+            os.system(f"btrfs sub del /.overlays/overlay-{child}")
+            os.system(f"btrfs sub del /.var/var-{child}")
+            os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{child}")
+            os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{child}")
+            os.system(f"btrfs sub del /.overlays/overlay-chr")
+            os.system(f"btrfs sub del /.var/var-chr")
 
 # Clone tree
 def clone_as_tree(overlay):
