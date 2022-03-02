@@ -219,6 +219,9 @@ def sync_tree(tree,treename):
         os.system(f"cp --reflink=auto -r /.var/var-{sarg}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/")
         os.system(f"cp --reflink=auto -r /.var/var-{sarg}/lib/systemd/* /.var/var-chr/lib/systemd/")
         os.system(f"cp --reflink=auto -r /.overlays/overlay-{sarg}/* /.overlays/overlay-chr/")
+        os.system(f"cp --reflink=auto -r /.var/var-{sarg}/lib/systemd/* /.var/var-chr/lib/systemd/")
+        os.system(f"cp --reflink=auto -r /.etc/etc-{sarg}/* /.etc/etc-chr/")
+        os.system(f"cp --reflink=auto -r /.etc/etc-{sarg}/* /.overlays/etc/")
         posttrans(arg)
 
 # Clone tree
