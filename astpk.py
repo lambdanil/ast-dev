@@ -88,21 +88,12 @@ def get_parent(tree, id):
     par = (anytree.find(tree, filter_=lambda node: (str(node.name) + "x") in (str(id) + "x")))
     return(par.parent.name)
 
-# Return list of children for node
+# Return all children for node
 def return_children(tree, id):
-    children = list(return_all_children(tree,id))
-    cchildren = []
+    children = []
     par = (anytree.find(tree, filter_=lambda node: (str(node.name)+"x") in (str(id)+"x")))
-    index = 0
     for child in anytree.PreOrderIter(par):
-        if index != 0:
-            schildren = return_all_children(tree, child.name)
-            if len(schildren) > 0:
-                schildren.remove(schildren[0])
-            for item in schildren:
-                if item in children:
-                    children.remove(item)
-        index += 1
+        children.append(child.name)
     if id in children:
         children.remove(id)
     return (children)
@@ -110,7 +101,7 @@ def return_children(tree, id):
 # Return order to recurse tree
 def recurstree(tree, cid):
     order = []
-    for child in (return_all_children(tree,cid)):
+    for child in (return_children(tree,cid)):
         par = get_parent(tree, child)
         if child != cid:
             order.append(par)
