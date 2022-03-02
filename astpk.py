@@ -221,6 +221,7 @@ def sync_tree(tree,treename):
             break
         arg = order[0]
         sarg = order[1]
+        print(arg,sarg)
         order.remove(order[0])
         order.remove(order[0])
         os.system(f"btrfs sub snap /.overlays/overlay-{sarg} /.overlays/overlay-chr")
