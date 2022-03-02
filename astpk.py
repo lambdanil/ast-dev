@@ -405,6 +405,15 @@ def cinstall(overlay,pkg):
     posttrans(i)
     deploy(i)
 
+def chroot_check():
+    chroot = True # When inside chroot
+    with open("/proc/mounts", "r") as mounts:
+        for line in mounts:
+            if str("/.overlays btrsf") in mounts:
+                chroot = False
+    return(chroot)
+
+
 # Switch between /tmp deployments !!! Reboot after this function !!!
 def switchtmp():
     mount = get_tmp()
@@ -479,12 +488,16 @@ def main(args):
     etc = overlay
     importer = DictImporter() # Dict importer
     exporter = DictExporter() # And exporter
+    isChroot = chroot_check()
     global fstree # Currently these are global variables, fix sometime
     global fstreepath # ---
     fstreepath = str("/var/astpk/fstree") # Path to fstree file
     fstree = importer.import_(import_tree_file("/var/astpk/fstree")) # Import fstree file
     # Recognize argument and call appropriate function
     for arg in args:
+        if isChroot == True:
+            print("Please don't use ast inside a chroot")
+            break
         if arg == "new-overlay" or arg == "new":
             new_overlay()
         elif arg == "chroot" or arg == "cr":
