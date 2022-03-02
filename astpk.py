@@ -213,7 +213,7 @@ def clone_branch(overlay):
     write_tree(fstree)
 
 # Sync tree and all it's overlays
-def sync_tree(treename):
+def sync_tree(tree,treename):
     unchr()
     order = recurstree(tree, treename)
     while True:
@@ -538,7 +538,7 @@ def main(args):
         elif arg == "base-update" or arg == "bu":
             update_base()
         elif arg == "sync" or arg == "tree-sync":
-            sync_tree(args[args.index(arg)+1])
+            sync_tree(fstree,args[args.index(arg)+1])
         elif arg  == "tree":
             show_fstree()
         elif (arg == args[1]):
