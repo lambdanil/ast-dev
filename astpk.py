@@ -216,7 +216,9 @@ def clone_branch(overlay):
 def sync_tree(tree,treename):
     unchr()
     order = recurstree(tree, treename)
-    print(order)
+    if len(order) > 2:
+        order.remove(order[0])
+        order.remove(order[0])
     while True:
         if len(order) < 2:
             break
