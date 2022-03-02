@@ -409,7 +409,7 @@ def chroot_check():
     chroot = True # When inside chroot
     with open("/proc/mounts", "r") as mounts:
         for line in mounts:
-            if str("/.overlays btrsf") in mounts:
+            if str("/.overlays btrsf") in line:
                 chroot = False
     return(chroot)
 
