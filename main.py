@@ -103,6 +103,8 @@ def main(args):
     os.system("btrfs sub snap /mnt/.overlays/overlay-0 /mnt/.overlays/overlay-tmp")
 #    os.system("umount /mnt/var")
     os.system("umount /mnt/boot")
+    if efi:
+        os.system("umount /mnt/boot/efi")
 #    os.system("mkdir /mnt/.var/var-tmp")
     os.system("mkdir /mnt/.boot/boot-tmp")
 #    os.system(f"mount {args[1]} -o subvol=@var,compress=zstd,noatime /mnt/.var/var-tmp")
