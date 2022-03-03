@@ -326,32 +326,50 @@ def delete(overlay):
     remove_node(fstree,overlay) # Remove node from tree or root
     write_tree(fstree)
 
-# Mount base to chroot dir for transaction, currently broken (easy fix)
+# Mount base to chroot dir for transaction
 def prepare_base():
     unchr()
     os.system(f"btrfs sub snap /.base/base /.overlays/overlay-chr")
-    os.system(f"rm -rf /.overlays/overlay-chr/var")
-    os.system(f"btrfs sub snap /.base/var /.var/var-chr")
     os.system(f"btrfs sub snap /.base/etc /.etc/etc-chr")
-    os.system(f"btrfs sub snap /.base/etc /.overlays/overlay-chr/etc")
+    os.system(f"btrfs sub snap /var /.var/var-chr")
+    os.system("rm -rf /.overlays/overlay-chr/var")
+    os.system(f"btrfs sub snap /var /.overlays/overlay-chr/var")
+    os.system(f"chmod 0755 /.overlays/overlay-chr/var") # For some reason the permission needs to be set here
+    os.system(f"rm -rf /.overlays/overlay-chr/var/lib/pacman")
+    os.system(f"rm -rf /.overlays/overlay-chr/var/lib/systemd")
+    os.system(f"cp -r --reflink=auto /.base/var/* /.overlays/overlay-chr/var/")
+    os.system(f"cp -r --reflink=auto /.base/var/* /.var/var-chr/")
     os.system(f"btrfs sub snap /.base/boot /.boot/boot-chr")
-    os.system(f"btrfs sub snap /.base/boot /.overlays/overlay-chr/boot")
-    os.system(f"btrfs sub snap /.base/var /.overlays/overlay-chr/var")
-    os.system("mount --bind /.overlays/overlay-chr /.overlays/overlay-chr")
+    os.system(f"cp -r --reflink=auto /.etc/etc-chr/* /.overlays/overlay-chr/etc")
+    os.system(f"cp -r --reflink=auto /.boot/boot-chr/* /.overlays/overlay-chr/boot")
+    os.system("mount --bind /.overlays/overlay-chr /.overlays/overlay-chr") # Pacman gets weird when chroot directory is not a mountpoint, so this unusual mount is necessary
 
-# Copy base from chroot dir back to base dir, currently broken (easy fix)
+# Copy base from chroot dir back to base dir
 def posttrans_base():
     os.system("umount /.overlays/overlay-chr")
     os.system(f"btrfs sub del /.base/base")
-    os.system(f"btrfs sub del /.base/var")
+    os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/etc/* /.etc/etc-chr")
+    os.system(f"btrfs sub del /.var/var-chr")
+    os.system(f"btrfs sub create /.var/var-chr")
+    os.system(f"mkdir -p /.var/var-chr/lib/systemd")
+    os.system(f"mkdir -p /.var/var-chr/lib/pacman")
+    os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/var/lib/systemd/* /.var/var-chr/lib/systemd")
+    os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/var/lib/pacman/* /.var/var-chr/lib/pacman")
+    os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/boot/* /.boot/boot-chr")
     os.system(f"btrfs sub del /.base/etc")
+    os.system(f"btrfs sub del /.base/var")
     os.system(f"btrfs sub del /.base/boot")
-    os.system(f"btrfs sub snap -r /.overlays/overlay-chr/var /.base/var")
-    os.system(f"btrfs sub snap -r /.overlays/overlay-chr/etc /.base/etc")
-    os.system(f"btrfs sub snap -r /.overlays/overlay-chr/boot /.base/boot")
+    os.system(f"btrfs sub snap -r /.etc/etc-chr /.base/etc")
+    os.system(f"btrfs sub create /.base/var")
+    os.system(f"mkdir -p /.base/var/lib/systemd")
+    os.system(f"mkdir -p /.base/var/lib/pacman")
+    os.system(f"cp --reflink=auto -r /.var/var-chr/lib/systemd/* /.base/var/lib/systemd")
+    os.system(f"cp --reflink=auto -r /.var/var-chr/lib/pacman/* /.base/var/lib/pacman")
     os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.base/base")
+#    os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{etc}")
+    os.system(f"btrfs sub snap -r /.boot/boot-chr /.base/boot")
 
-# Update base, currently broken (easy fix)
+# Update base
 def update_base():
     prepare_base()
     os.system(f"pacman -r /.overlays/overlay-chr -Syyu")
