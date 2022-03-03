@@ -356,6 +356,13 @@ def update_base():
     os.system(f"pacman -r /.overlays/overlay-chr -Syyu")
     posttrans_base()
 
+def get_efi():
+    if os.path.exists("/sys/firmware/efi"):
+        efi = True
+    else:
+        efi = False
+    return(efi)
+
 # Prepare overlay to chroot dir to install or chroot into
 def prepare(overlay):
     unchr()
