@@ -265,7 +265,7 @@ def update_etc():
     deploy(overlay)
 
 # Update boot
-def update_boot(overlay):
+def update_boot():
     tmp = get_tmp()
     os.system(f"sed -i s/overlay-chr/overlay-{tmp}/g /boot/grub/grub.cfg")
 
@@ -280,7 +280,7 @@ def unchr():
     os.system(f"btrfs sub del /.etc/etc-chr")
     os.system(f"btrfs sub del /.var/var-chr")
     os.system(f"btrfs sub del /.boot/boot-chr")
-    os.system(f"btrfs sub del /.overlays/overlay-chr/var")
+    os.system(f"btrfs sub del /.overlays/overlay-chr/*")
     os.system(f"btrfs sub del /.overlays/overlay-chr")
 
 # Clean tmp dirs
@@ -331,14 +331,23 @@ def prepare_base():
     os.system(f"btrfs sub snap /.base/base /.overlays/overlay-chr")
     os.system(f"rm -rf /.overlays/overlay-chr/var")
     os.system(f"btrfs sub snap /.base/var /.var/var-chr")
+    os.system(f"btrfs sub snap /.base/etc /.etc/etc-chr")
+    os.system(f"btrfs sub snap /.base/etc /.overlays/overlay-chr/etc")
+    os.system(f"btrfs sub snap /.base/boot /.boot/boot-chr")
+    os.system(f"btrfs sub snap /.base/boot /.overlays/overlay-chr/boot")
     os.system(f"btrfs sub snap /.base/var /.overlays/overlay-chr/var")
+    os.system("mount --bind /.overlays/overlay-chr /.overlays/overlay-chr")
 
 # Copy base from chroot dir back to base dir, currently broken (easy fix)
 def posttrans_base():
     os.system("umount /.overlays/overlay-chr")
     os.system(f"btrfs sub del /.base/base")
     os.system(f"btrfs sub del /.base/var")
-    os.system(f"btrfs sub snap -r /.overlays/overlay-chr/var /.base/base")
+    os.system(f"btrfs sub del /.base/etc")
+    os.system(f"btrfs sub del /.base/boot")
+    os.system(f"btrfs sub snap -r /.overlays/overlay-chr/var /.base/var")
+    os.system(f"btrfs sub snap -r /.overlays/overlay-chr/etc /.base/etc")
+    os.system(f"btrfs sub snap -r /.overlays/overlay-chr/boot /.base/boot")
     os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.base/base")
 
 # Update base, currently broken (easy fix)
@@ -510,7 +519,7 @@ def main(args):
         if arg == "new-overlay" or arg == "new":
             new_overlay()
         elif arg == "boot-update" or arg == "boot":
-            update_boot(args[args.index(arg)+1])
+            update_boot()
         elif arg == "chroot" or arg == "cr":
             chroot(args[args.index(arg)+1])
         elif arg == "install" or arg == "i":
