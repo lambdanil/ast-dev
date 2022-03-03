@@ -250,7 +250,7 @@ def new_overlay():
     os.system(f"btrfs sub snap -r /.var/var-0 /.var/var-{i}")
     os.system(f"btrfs sub snap -r /.boot/boot-0 /.boot/boot-{i}")
 #    append_base_tree(fstree, i)
-    add_node_to_parent(fstree, fstree.root, i)
+    append_base_tree(fstree,i)
     write_tree(fstree)
 
 # Calls print function
