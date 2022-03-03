@@ -120,9 +120,9 @@ def main(args):
     os.system("cp --reflink=auto -r /mnt/.var/var-0/* /mnt/.overlays/overlay-tmp/var")
     os.system("cp --reflink=auto -r /mnt/.boot/boot-0/* /mnt/.overlays/overlay-tmp/boot")
     os.system("btrfs sub snap -r /mnt /mnt/.base/base")
-    os.system("btrfs sub snap -r /.var/var-0 /mnt/.base/var")
-    os.system("btrfs sub snap -r /.var/etc-0 /mnt/.base/etc")
-    os.system("btrfs sub snap -r /.var/boot-0 /mnt/.base/boot")
+    os.system("btrfs sub snap -r /mnt/.var/var-0 /mnt/.base/var")
+    os.system("btrfs sub snap -r /mnt/.var/etc-0 /mnt/.base/etc")
+    os.system("btrfs sub snap -r /mnt/.var/boot-0 /mnt/.base/boot")
 
     print("You can reboot now :)")
 
