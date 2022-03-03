@@ -521,7 +521,7 @@ def main(args):
     fstree = importer.import_(import_tree_file("/var/astpk/fstree")) # Import fstree file
     # Recognize argument and call appropriate function
     for arg in args:
-        if isChroot == True and ("--chroot" not in args) and ("boot-update" not in args) ("boot" not in args):
+        if isChroot == True and ("--chroot" not in args) and ("boot-update" not in args) and ("boot" not in args):
             print("Please don't use ast inside a chroot")
             break
         if arg == "new-overlay" or arg == "new":
