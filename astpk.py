@@ -65,7 +65,8 @@ def add_node_to_parent(tree, id, val):
 
 # Clone within node
 def add_node_to_level(tree,id, val): # Broken, likely useless, probably remove later
-    par = get_parent(tree, id)
+    npar = get_parent(tree, id)
+    par = (anytree.find(tree, filter_=lambda node: (str(node.name) + "x") in (str(npar) + "x"))) # Not entirely sure how the lambda stuff here works, but it does ¯\_(ツ)_/¯
     add = anytree.Node(val, parent=par)
 
 # Remove node from tree
