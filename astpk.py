@@ -217,15 +217,19 @@ def sync_tree(tree,treename):
         order.remove(order[0])
         os.system(f"btrfs sub snap /.overlays/overlay-{sarg} /.overlays/overlay-chr")
         os.system(f"btrfs sub snap /.var/var-{sarg} /.var/var-chr")
+        os.system(f"btrfs sub snap /.boot/boot-{sarg} /.boot/boot-chr")
         os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/")
         os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/systemd/* /.var/var-chr/lib/systemd/")
         os.system(f"cp --reflink=auto -r /.overlays/overlay-{arg}/* /.overlays/overlay-chr/")
         os.system(f"btrfs sub del /.overlays/overlay-{sarg}")
         os.system(f"btrfs sub del /.var/var-{sarg}")
+        os.system(f"btrfs sub del /.boot/boot-{sarg}")
         os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{sarg}")
         os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{sarg}")
+        os.system(f"btrfs sub snap -r /.boot/boot-chr /.boot/boot-{sarg}")
         os.system(f"btrfs sub del /.overlays/overlay-chr")
         os.system(f"btrfs sub del /.var/var-chr")
+        os.system(f"btrfs sub del /.boot/boot-chr")
 
 # Clone tree
 def clone_as_tree(overlay):
@@ -256,9 +260,14 @@ def show_fstree():
 def update_etc():
     tmp = get_tmp()
     prepare(tmp)
-    i = findnew()
-    posttrans(i)
-    deploy(i)
+    overlay = get_overlay()
+    posttrans(overlay)
+    deploy(overlay)
+
+# Update boot
+def update_boot(overlay):
+    tmp = get_tmp()
+    os.system(f"sed -i s/overlay-chr/overlay-{tmp}/g /boot/grub/grub.cfg")
 
 # Chroot into overlay
 def chroot(overlay):
@@ -495,11 +504,13 @@ def main(args):
     fstree = importer.import_(import_tree_file("/var/astpk/fstree")) # Import fstree file
     # Recognize argument and call appropriate function
     for arg in args:
-        if isChroot == True and ("--chroot" not in args):
+        if isChroot == True and ("--chroot" not in args) and ("boot-update" not in args) ("boot" not in args):
             print("Please don't use ast inside a chroot")
             break
         if arg == "new-overlay" or arg == "new":
             new_overlay()
+        elif arg == "boot-update" or arg == "boot":
+            update_boot(args[args.index(arg)+1])
         elif arg == "chroot" or arg == "cr":
             chroot(args[args.index(arg)+1])
         elif arg == "install" or arg == "i":
@@ -508,6 +519,8 @@ def main(args):
             cinstall(overlay,args[args.index(arg)+1])
         elif arg == "add-branch" or arg == "branch":
             extend_branch(args[args.index(arg)+1])
+        elif arg == "clone-branch" or arg == "cbranch":
+            clone_branch(args[args.index(arg)+1])
         elif arg == "clone" or arg == "tree-clone":
             clone_as_tree(args[args.index(arg)+1])
         elif arg == "list" or arg == "l":
