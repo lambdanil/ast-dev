@@ -186,7 +186,7 @@ def rdeploy(overlay):
 def deploy(overlay):
     tmp = get_tmp()
     untmp()
-    unchr()
+#    unchr()
     if "tmp0" in tmp:
         tmp = "tmp"
     else:
@@ -207,7 +207,7 @@ def deploy(overlay):
     os.system(f"echo '{etc}' > /.overlays/overlay-{tmp}/etc/astpk.d/astpk-cetc")
     os.system(f"echo '{overlay}' > /.etc/etc-{tmp}/astpk.d/astpk-coverlay")
     os.system(f"echo '{etc}' > /.etc/etc-{tmp}/astpk.d/astpk-cetc")
-    update_boot(overlay)
+#    update_boot(overlay)
     switchtmp()
     os.system(f"rm -rf /var/lib/pacman/*") # Clean pacman and systemd directories before copy
     os.system(f"rm -rf /var/lib/systemd/*")
