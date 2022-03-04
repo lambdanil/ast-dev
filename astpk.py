@@ -321,6 +321,10 @@ def pac(overlay,arg):
 # Delete tree or branch
 def delete(overlay):
     children = return_children(fstree,overlay)
+    os.system(f"btrfs sub del /.boot/boot-{overlay}")
+    os.system(f"btrfs sub del /.etc/etc-{overlay}")
+    os.system(f"btrfs sub del /.var/var-{overlay}")
+    os.system(f"btrfs sub del /.overlays/overlay-{overlay}")
     for child in children: # This deleted the node itself along with it's children
         os.system(f"btrfs sub del /.boot/boot-{child}")
         os.system(f"btrfs sub del /.etc/etc-{child}")
@@ -520,7 +524,6 @@ def findnew():
         i += 1
         if str(f"overlay-{i}") not in overlays and str(f"etc-{i}") not in overlays and str(f"var-{i}") not in overlays and str(f"boot-{i}") not in overlays:
             return(i)
-            break
 
 # Build image from recipe, currently completely untested, likely broken
 def mk_img(imgpath):
