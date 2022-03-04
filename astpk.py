@@ -186,6 +186,7 @@ def rdeploy(overlay):
 def deploy(overlay):
     tmp = get_tmp()
     untmp()
+    unchr()
     if "tmp0" in tmp:
         tmp = "tmp"
     else:
