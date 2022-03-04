@@ -12,6 +12,9 @@ args = list(sys.argv)
 
 
 # TODO ------------
+# Make delete recursive
+# Test EFI
+# Handle bootloader updates better
 # Test and improve image building, fix meaningless errors on output, clean up code, add more comments to code.
 # Add documentation, improve /etc merges (currently unhandled), make the tree sync write less data maybe?
 # Make trees sync recursively
@@ -474,6 +477,7 @@ def switchtmp():
     if "tmp0" in mount:
         os.system("cp --reflink=auto -r /.overlays/overlay-tmp/boot/* /etc/mnt/boot")
         os.system("sed -i 's,subvol=@.overlays/overlay-tmp0,subvol=@.overlays/overlay-tmp,' /etc/mnt/boot/grub/grub.cfg") # Overwrite grub config boot subvolume
+        os.system("sed -i 's,subvol=@.overlays/overlay-tmp0,subvol=@.overlays/overlay-tmp,' /etc/.overlays/overlay-tmp/boot/grub/grub.cfg")
         os.system("sed -i 's,@.overlays/overlay-tmp0,@.overlays/overlay-tmp,' /.overlays/overlay-tmp/etc/fstab") # Write fstab for new deployment
         os.system("sed -i 's,@.etc/etc-tmp0,@.etc/etc-tmp,' /.overlays/overlay-tmp/etc/fstab")
 #        os.system("sed -i 's,@.var/var-tmp0,@.var/var-tmp,' /.overlays/overlay-tmp/etc/fstab")
@@ -481,6 +485,7 @@ def switchtmp():
     else:
         os.system("cp --reflink=auto -r /.overlays/overlay-tmp0/boot/* /etc/mnt/boot")
         os.system("sed -i 's,subvol=@.overlays/overlay-tmp,subvol=@.overlays/overlay-tmp0,' /etc/mnt/boot/grub/grub.cfg")
+        os.system("sed -i 's,subvol=@.overlays/overlay-tmp,subvol=@.overlays/overlay-tmp0,' /etc/.overlays/overlay-tmp0/boot/grub/grub.cfg")
         os.system("sed -i 's,@.overlays/overlay-tmp,@.overlays/overlay-tmp0,' /.overlays/overlay-tmp0/etc/fstab")
         os.system("sed -i 's,@.etc/etc-tmp,@.etc/etc-tmp0,' /.overlays/overlay-tmp0/etc/fstab")
 #        os.system("sed -i 's,@.var/var-tmp,@.var/var-tmp0,' /.overlays/overlay-tmp0/etc/fstab")
@@ -534,8 +539,10 @@ def main(args):
     exporter = DictExporter() # And exporter
     isChroot = chroot_check()
     global fstree # Currently these are global variables, fix sometime
+    global efi
     global fstreepath # ---
     fstreepath = str("/var/astpk/fstree") # Path to fstree file
+    efi = get_efi()
     fstree = importer.import_(import_tree_file("/var/astpk/fstree")) # Import fstree file
     # Recognize argument and call appropriate function
     for arg in args:
