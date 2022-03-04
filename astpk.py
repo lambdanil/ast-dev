@@ -299,9 +299,11 @@ def update_etc():
     deploy(overlay)
 
 # Update boot
-def update_boot():
+def update_boot(overlay):
     tmp = get_tmp()
-    os.system(f"sed -i s/overlay-chr/overlay-{tmp}/g /boot/grub/grub.cfg")
+    prepare(overlay)
+    os.system(f"arch-chroot /mnt sed -i s/overlay-chr/overlay-{tmp}/g /boot/grub/grub.cfg")
+    posttrans(overlay)
 
 # Chroot into overlay
 def chroot(overlay):
@@ -608,13 +610,13 @@ def main(args):
     fstree = importer.import_(import_tree_file("/var/astpk/fstree")) # Import fstree file
     # Recognize argument and call appropriate function
     for arg in args:
-        if isChroot == True and ("--chroot" not in args) and ("boot-update" not in args) and ("boot" not in args):
+        if isChroot == True and ("--chroot" not in args):
             print("Please don't use ast inside a chroot")
             break
         if arg == "new-overlay" or arg == "new":
             new_overlay()
         elif arg == "boot-update" or arg == "boot":
-            update_boot()
+            update_boot(args[args.index(arg)+1])
         elif arg == "chroot" or arg == "cr":
             chroot(args[args.index(arg)+1])
         elif arg == "install" or arg == "i":
