@@ -34,6 +34,8 @@ def main(args):
         os.system("mkdir /mnt/boot/efi")
         os.system(f"mount {args[3]} /mnt/boot/efi")
     os.system("pacstrap /mnt base vim linux-lts linux-firmware python-anytree dhcpcd btrfs-progs python3 git arch-install-scripts networkmanager grub")
+    if efi:
+        os.system("pacstrap /mnt efibootmgr")
     mntdirs_n = mntdirs
     mntdirs_n.remove("")
     os.system(f"echo '{args[1]} / btrfs subvol=@,compress=zstd,noatime,ro 0 0' > /mnt/etc/fstab")
