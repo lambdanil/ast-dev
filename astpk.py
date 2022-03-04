@@ -152,6 +152,36 @@ def get_tmp():
     else:
         return("tmp")
 
+# Reverse tmp deploy image
+def rdeploy(overlay):
+    tmp = get_tmp()
+    untmp()
+    etc = overlay
+    os.system(f"btrfs sub snap /.overlays/overlay-{overlay} /.overlays/overlay-{tmp}")
+    os.system(f"btrfs sub snap /.etc/etc-{overlay} /.etc/etc-{tmp}")
+    os.system(f"btrfs sub create /.var/var-{tmp}")
+    os.system(f"cp --reflink=auto -r /.var/var-{etc}/* /.var/var-{tmp}")
+    os.system(f"btrfs sub snap /.boot/boot-{overlay} /.boot/boot-{tmp}")
+    os.system(f"mkdir /.overlays/overlay-{tmp}/etc")
+    os.system(f"rm -rf /.overlays/overlay-{tmp}/var")
+    os.system(f"mkdir /.overlays/overlay-{tmp}/boot")
+    os.system(f"cp --reflink=auto -r /.etc/etc-{etc}/* /.overlays/overlay-{tmp}/etc")
+    os.system(f"btrfs sub snap /var /.overlays/overlay-{tmp}/var")
+    os.system(f"cp --reflink=auto -r /.boot/boot-{etc}/* /.overlays/overlay-{tmp}/boot")
+    os.system(f"echo '{overlay}' > /.overlays/overlay-{tmp}/etc/astpk.d/astpk-coverlay")
+    os.system(f"echo '{etc}' > /.overlays/overlay-{tmp}/etc/astpk.d/astpk-cetc")
+    os.system(f"echo '{overlay}' > /.etc/etc-{tmp}/astpk.d/astpk-coverlay")
+    os.system(f"echo '{etc}' > /.etc/etc-{tmp}/astpk.d/astpk-cetc")
+    rswitchtmp()
+    os.system(f"rm -rf /var/lib/pacman/*") # Clean pacman and systemd directories before copy
+    os.system(f"rm -rf /var/lib/systemd/*")
+    os.system(f"cp --reflink=auto -r /.var/var-{etc}/* /.overlays/overlay-{tmp}/var/")
+    os.system(f"cp --reflink=auto -r /.var/var-{etc}/lib/pacman/* /var/lib/pacman/") # Copy pacman and systemd directories
+    os.system(f"cp --reflink=auto -r /.var/var-{etc}/lib/systemd/* /var/lib/systemd/")
+    os.system(f"btrfs sub set-default /.overlays/overlay-{tmp}") # Set default volume
+
+
+
 # Deploy image
 def deploy(overlay):
     tmp = get_tmp()
@@ -497,6 +527,35 @@ def switchtmp():
     os.system("umount /etc/mnt/boot")
 #    os.system("reboot") # Enable for non-testing versions
 
+def rswitchtmp():
+    mount = get_tmp()
+    part = get_part()
+    if "tmp0" in mount:
+        mount = "tmp"
+    else:
+        mount = "tmp0"
+    os.system(f"mkdir /etc/mnt")
+    os.system(f"mkdir /etc/mnt/boot")
+    os.system(f"mount {part} -o subvol=@boot /etc/mnt/boot") # Mount boot partition for writing
+    if "tmp0" in mount:
+        os.system("cp --reflink=auto -r /.overlays/overlay-tmp/boot/* /etc/mnt/boot")
+        os.system("sed -i 's,subvol=@.overlays/overlay-tmp0,subvol=@.overlays/overlay-tmp,' /etc/mnt/boot/grub/grub.cfg") # Overwrite grub config boot subvolume
+        os.system("sed -i 's,subvol=@.overlays/overlay-tmp0,subvol=@.overlays/overlay-tmp,' /.overlays/overlay-tmp/boot/grub/grub.cfg")
+        os.system("sed -i 's,@.overlays/overlay-tmp0,@.overlays/overlay-tmp,' /.overlays/overlay-tmp/etc/fstab") # Write fstab for new deployment
+        os.system("sed -i 's,@.etc/etc-tmp0,@.etc/etc-tmp,' /.overlays/overlay-tmp/etc/fstab")
+#        os.system("sed -i 's,@.var/var-tmp0,@.var/var-tmp,' /.overlays/overlay-tmp/etc/fstab")
+        os.system("sed -i 's,@.boot/boot-tmp0,@.boot/boot-tmp,' /.overlays/overlay-tmp/etc/fstab")
+    else:
+        os.system("cp --reflink=auto -r /.overlays/overlay-tmp0/boot/* /etc/mnt/boot")
+        os.system("sed -i 's,subvol=@.overlays/overlay-tmp,subvol=@.overlays/overlay-tmp0,' /etc/mnt/boot/grub/grub.cfg")
+        os.system("sed -i 's,subvol=@.overlays/overlay-tmp,subvol=@.overlays/overlay-tmp0,' /.overlays/overlay-tmp0/boot/grub/grub.cfg")
+        os.system("sed -i 's,@.overlays/overlay-tmp,@.overlays/overlay-tmp0,' /.overlays/overlay-tmp0/etc/fstab")
+        os.system("sed -i 's,@.etc/etc-tmp,@.etc/etc-tmp0,' /.overlays/overlay-tmp0/etc/fstab")
+#        os.system("sed -i 's,@.var/var-tmp,@.var/var-tmp0,' /.overlays/overlay-tmp0/etc/fstab")
+        os.system("sed -i 's,@.boot/boot-tmp,@.boot/boot-tmp0,' /.overlays/overlay-tmp0/etc/fstab")
+    os.system("umount /etc/mnt/boot")
+#    os.system("reboot") # Enable for non-testing versions
+
 # List overlays, quite unnecessary with the tree now :)
 def ls_overlay():
     overlays = os.listdir("/.overlays")
@@ -573,6 +632,8 @@ def main(args):
         elif arg == "mk-img" or arg == "img":
             mk_img(args[args.index(arg)+1])
         elif arg == "deploy":
+            deploy(args[args.index(arg)+1])
+        elif arg == "rdeploy" or arg == "rescue-deploy":
             deploy(args[args.index(arg)+1])
         elif arg == "upgrade" or arg == "up":
             upgrade(args[args.index(arg)+1])
