@@ -47,6 +47,15 @@ def main(args):
     os.system(f"echo '{args[1]}' > /mnt/etc/astpk.d/astpk-part")
     os.system(f"echo '0' > /mnt/etc/astpk.d/astpk-coverlay")
     os.system(f"echo '0' > /mnt/etc/astpk.d/astpk-cetc")
+
+    os.system(f"echo 'NAME=\"astOS\"' >> /mnt/etc/os-release")
+    os.system(f"echo 'PRETTY_NAME=\"astOS\"' >> /mnt/etc/os-release")
+    os.system(f"echo 'ID=astos' >> /mnt/etc/os-release")
+    os.system(f"echo 'BUILD_ID=rolling' >> /mnt/etc/os-release")
+    os.system(f"echo 'ANSI_COLOR=\"38;2;23;147;209\"' >> /mnt/etc/os-release")
+    os.system(f"echo 'HOME_URL=\"https://github.com/CuBeRJAN/astOS\"' >> /mnt/etc/os-release")
+    os.system(f"echo 'LOGO=astos-logo' >> /mnt/etc/os-release")
+
     while True:
         print("Select a timezone (type list to list):")
         zone = input("> ")
