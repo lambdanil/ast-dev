@@ -14,6 +14,7 @@ args = list(sys.argv)
 # TODO ------------
 # Make delete recursive
 # Test EFI
+# General code cleanup
 # Handle bootloader updates better
 # Test and improve image building, fix meaningless errors on output, clean up code, add more comments to code.
 # Add documentation, improve /etc merges (currently unhandled), make the tree sync write less data maybe?
@@ -235,6 +236,79 @@ def clone_branch(overlay):
     os.system(f"btrfs sub snap -r /.boot/boot-{overlay} /.boot/boot-{i}")
     add_node_to_level(fstree,overlay,i)
     write_tree(fstree)
+
+# Clone under specified parent
+def clone_under(overlay, branch):
+    i = findnew()
+    os.system(f"btrfs sub snap -r /.overlays/overlay-{branch} /.overlays/overlay-{i}")
+    os.system(f"btrfs sub snap -r /.etc/etc-{branch} /.etc/etc-{i}")
+    os.system(f"btrfs sub snap -r /.var/var-{branch} /.var/var-{i}")
+    os.system(f"btrfs sub snap -r /.boot/boot-{branch} /.boot/boot-{i}")
+    add_node_to_level(fstree,overlay,i)
+    write_tree(fstree)
+
+# Recursivly run an update in tree
+def update_tree(tree,treename):
+    unchr()
+    order = recurstree(tree, treename)
+    if len(order) > 2:
+        order.remove(order[0])
+        order.remove(order[0])
+    while True:
+        if len(order) < 2:
+            break
+        arg = order[0]
+        sarg = order[1]
+        print(arg,sarg)
+        order.remove(order[0])
+        order.remove(order[0])
+        os.system(f"btrfs sub snap /.overlays/overlay-{sarg} /.overlays/overlay-chr")
+        os.system(f"btrfs sub snap /.var/var-{sarg} /.var/var-chr")
+        os.system(f"btrfs sub snap /.boot/boot-{sarg} /.boot/boot-chr")
+        os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/")
+        os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/systemd/* /.var/var-chr/lib/systemd/")
+        os.system(f"cp --reflink=auto -r /.overlays/overlay-{arg}/* /.overlays/overlay-chr/")
+        os.system(f"arch-chroot /mnt pacman -Syyu")
+        os.system(f"btrfs sub del /.overlays/overlay-{sarg}")
+        os.system(f"btrfs sub del /.var/var-{sarg}")
+        os.system(f"btrfs sub del /.boot/boot-{sarg}")
+        os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{sarg}")
+        os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{sarg}")
+        os.system(f"btrfs sub snap -r /.boot/boot-chr /.boot/boot-{sarg}")
+        os.system(f"btrfs sub del /.overlays/overlay-chr")
+        os.system(f"btrfs sub del /.var/var-chr")
+        os.system(f"btrfs sub del /.boot/boot-chr")
+
+# Sync tree and all it's overlays
+def sync_tree(tree,treename):
+    unchr()
+    order = recurstree(tree, treename)
+    if len(order) > 2:
+        order.remove(order[0])
+        order.remove(order[0])
+    while True:
+        if len(order) < 2:
+            break
+        arg = order[0]
+        sarg = order[1]
+        print(arg,sarg)
+        order.remove(order[0])
+        order.remove(order[0])
+        os.system(f"btrfs sub snap /.overlays/overlay-{sarg} /.overlays/overlay-chr")
+        os.system(f"btrfs sub snap /.var/var-{sarg} /.var/var-chr")
+        os.system(f"btrfs sub snap /.boot/boot-{sarg} /.boot/boot-chr")
+        os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/")
+        os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/systemd/* /.var/var-chr/lib/systemd/")
+        os.system(f"cp --reflink=auto -r /.overlays/overlay-{arg}/* /.overlays/overlay-chr/")
+        os.system(f"btrfs sub del /.overlays/overlay-{sarg}")
+        os.system(f"btrfs sub del /.var/var-{sarg}")
+        os.system(f"btrfs sub del /.boot/boot-{sarg}")
+        os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{sarg}")
+        os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{sarg}")
+        os.system(f"btrfs sub snap -r /.boot/boot-chr /.boot/boot-{sarg}")
+        os.system(f"btrfs sub del /.overlays/overlay-chr")
+        os.system(f"btrfs sub del /.var/var-chr")
+        os.system(f"btrfs sub del /.boot/boot-chr")
 
 # Sync tree and all it's overlays
 def sync_tree(tree,treename):
@@ -631,6 +705,8 @@ def main(args):
             extend_branch(args[args.index(arg)+1])
         elif arg == "clone-branch" or arg == "cbranch":
             clone_branch(args[args.index(arg)+1])
+        elif arg == "clone-under" or arg == "ubranch":
+            clone_under(args[args.index(arg)+1], args[args.index(arg)+2])
         elif arg == "clone" or arg == "tree-clone":
             clone_as_tree(args[args.index(arg)+1])
         elif arg == "list" or arg == "l":
@@ -669,6 +745,8 @@ def main(args):
             update_base()
         elif arg == "sync" or arg == "tree-sync":
             sync_tree(fstree,args[args.index(arg)+1])
+        elif arg == "tree-upgrade" or arg == "tupgrade":
+            update_tree(fstree,args[args.index(arg)+1])
         elif arg  == "tree":
             show_fstree()
         elif (arg == args[1]):
