@@ -244,7 +244,7 @@ def clone_under(overlay, branch):
     os.system(f"btrfs sub snap -r /.etc/etc-{branch} /.etc/etc-{i}")
     os.system(f"btrfs sub snap -r /.var/var-{branch} /.var/var-{i}")
     os.system(f"btrfs sub snap -r /.boot/boot-{branch} /.boot/boot-{i}")
-    add_node_to_level(fstree,overlay,i)
+    add_node_to_parent(fstree,overlay,i)
     write_tree(fstree)
 
 # Recursivly run an update in tree
