@@ -64,18 +64,18 @@ def append_base_tree(tree,val):
 
 # Add child to node
 def add_node_to_parent(tree, id, val):
-    par = (anytree.find(tree, filter_=lambda node: (str(node.name)+"x") in (str(id)+"x"))) # Not entirely sure how the lambda stuff here works, but it does ¯\_(ツ)_/¯
+    par = (anytree.find(tree, filter_=lambda node: ("x"+str(node.name)+"x") in ("x"+str(id)+"x"))) # Not entirely sure how the lambda stuff here works, but it does ¯\_(ツ)_/¯
     add = anytree.Node(val, parent=par)
 
 # Clone within node
 def add_node_to_level(tree,id, val): # Broken, likely useless, probably remove later
     npar = get_parent(tree, id)
-    par = (anytree.find(tree, filter_=lambda node: (str(node.name) + "x") in (str(npar) + "x"))) # Not entirely sure how the lambda stuff here works, but it does ¯\_(ツ)_/¯
+    par = (anytree.find(tree, filter_=lambda node: ("x"+str(node.name)+"x") in ("x"+str(id)+"x")))
     add = anytree.Node(val, parent=par)
 
 # Remove node from tree
 def remove_node(tree, id):
-    par = (anytree.find(tree, filter_=lambda node: (str(node.name)+"x") in (str(id)+"x")))
+    par = (anytree.find(tree, filter_=lambda node: ("x"+str(node.name)+"x") in ("x"+str(id)+"x")))
     par.parent = None
     print(par)
 
@@ -88,13 +88,13 @@ def write_tree(tree):
 
 # Get parent
 def get_parent(tree, id):
-    par = (anytree.find(tree, filter_=lambda node: (str(node.name) + "x") in (str(id) + "x")))
+    par = (anytree.find(tree, filter_=lambda node: ("x"+str(node.name)+"x") in ("x"+str(id)+"x")))
     return(par.parent.name)
 
 # Return all children for node
 def return_children(tree, id):
     children = []
-    par = (anytree.find(tree, filter_=lambda node: (str(node.name)+"x") in (str(id)+"x")))
+    par = (anytree.find(tree, filter_=lambda node: ("x"+str(node.name)+"x") in ("x"+str(id)+"x")))
     for child in anytree.PreOrderIter(par):
         children.append(child.name)
     if id in children:
@@ -115,7 +115,7 @@ def recurstree(tree, cid):
 def return_current_children(tree, id):
     children = list(return_children(tree,id))
     cchildren = []
-    par = (anytree.find(tree, filter_=lambda node: (str(node.name)+"x") in (str(id)+"x")))
+    par = (anytree.find(tree, filter_=lambda node: ("x"+str(node.name)+"x") in ("x"+str(id)+"x")))
     index = 0
     for child in anytree.PreOrderIter(par):
         if index != 0:
@@ -269,37 +269,6 @@ def update_tree(tree,treename):
         os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/systemd/* /.var/var-chr/lib/systemd/")
         os.system(f"cp --reflink=auto -r /.overlays/overlay-{arg}/* /.overlays/overlay-chr/")
         os.system(f"arch-chroot /mnt pacman -Syyu")
-        os.system(f"btrfs sub del /.overlays/overlay-{sarg}")
-        os.system(f"btrfs sub del /.var/var-{sarg}")
-        os.system(f"btrfs sub del /.boot/boot-{sarg}")
-        os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{sarg}")
-        os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{sarg}")
-        os.system(f"btrfs sub snap -r /.boot/boot-chr /.boot/boot-{sarg}")
-        os.system(f"btrfs sub del /.overlays/overlay-chr")
-        os.system(f"btrfs sub del /.var/var-chr")
-        os.system(f"btrfs sub del /.boot/boot-chr")
-
-# Sync tree and all it's overlays
-def sync_tree(tree,treename):
-    unchr()
-    order = recurstree(tree, treename)
-    if len(order) > 2:
-        order.remove(order[0])
-        order.remove(order[0])
-    while True:
-        if len(order) < 2:
-            break
-        arg = order[0]
-        sarg = order[1]
-        print(arg,sarg)
-        order.remove(order[0])
-        order.remove(order[0])
-        os.system(f"btrfs sub snap /.overlays/overlay-{sarg} /.overlays/overlay-chr")
-        os.system(f"btrfs sub snap /.var/var-{sarg} /.var/var-chr")
-        os.system(f"btrfs sub snap /.boot/boot-{sarg} /.boot/boot-chr")
-        os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/")
-        os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/systemd/* /.var/var-chr/lib/systemd/")
-        os.system(f"cp --reflink=auto -r /.overlays/overlay-{arg}/* /.overlays/overlay-chr/")
         os.system(f"btrfs sub del /.overlays/overlay-{sarg}")
         os.system(f"btrfs sub del /.var/var-{sarg}")
         os.system(f"btrfs sub del /.boot/boot-{sarg}")
@@ -732,8 +701,10 @@ def main(args):
         elif arg == "pac" or arg == "p":
             args_2 = args
             args_2.remove(args_2[0])
-            args_2.remove(args_2[1])
-            pac(str(" ").join(args_2))
+            args_2.remove(args_2[0])
+            coverlay = args_2[0]
+            args_2.remove(args_2[0])
+            pac(coverlay, str(" ").join(args_2))
         elif arg == "desc" or arg == "description":
             n_lay = args[args.index(arg)+1]
             args_2 = args
