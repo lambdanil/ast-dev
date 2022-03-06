@@ -157,6 +157,10 @@ def get_tmp():
 def rdeploy(overlay):
     tmp = get_tmp()
     untmp()
+    if "tmp0" in tmp:
+        tmp = "tmp"
+    else:
+        tmp = "tmp0"
     etc = overlay
     os.system(f"btrfs sub snap /.overlays/overlay-{overlay} /.overlays/overlay-{tmp}")
     os.system(f"btrfs sub snap /.etc/etc-{overlay} /.etc/etc-{tmp}")
