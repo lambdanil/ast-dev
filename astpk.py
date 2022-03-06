@@ -279,7 +279,28 @@ def clone_under(overlay, branch):
         write_desc(i, desc)
         print(f"branch {i} added to {overlay}")
 
-# Recursivly run an update in tree
+# Recursively remove package in tree
+def remove_from_tree(tree,treename,pkg):
+    if not (os.path.exists(f"/.overlays/overlay-{treename}")):
+        print("cannot update, tree doesn't exist")
+    else:
+        unchr()
+        order = recurstree(tree, treename)
+        if len(order) > 2:
+            order.remove(order[0])
+            order.remove(order[0])
+        while True:
+            if len(order) < 2:
+                break
+            arg = order[0]
+            sarg = order[1]
+            print(arg,sarg)
+            order.remove(order[0])
+            order.remove(order[0])
+            remove(sarg,pkg)
+        print(f"tree {treename} was updated")
+
+# Recursively run an update in tree
 def update_tree(tree,treename):
     if not (os.path.exists(f"/.overlays/overlay-{treename}")):
         print("cannot update, tree doesn't exist")
@@ -297,23 +318,13 @@ def update_tree(tree,treename):
             print(arg,sarg)
             order.remove(order[0])
             order.remove(order[0])
-            os.system(f"btrfs sub snap /.overlays/overlay-{sarg} /.overlays/overlay-chr >/dev/null 2>&1")
-            os.system(f"btrfs sub snap /.var/var-{sarg} /.var/var-chr >/dev/null 2>&1")
-            os.system(f"btrfs sub snap /.boot/boot-{sarg} /.boot/boot-chr >/dev/null 2>&1")
+            prepare(sarg)
             os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/ >/dev/null 2>&1")
             os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/systemd/* /.var/var-chr/lib/systemd/ >/dev/null 2>&1")
             os.system(f"cp --reflink=auto -r /.overlays/overlay-{arg}/* /.overlays/overlay-chr/ >/dev/null 2>&1")
-            os.system(f"arch-chroot /mnt pacman -Syyu")
-            os.system(f"btrfs sub del /.overlays/overlay-{sarg} >/dev/null 2>&1")
-            os.system(f"btrfs sub del /.var/var-{sarg}  >/dev/null 2>&1")
-            os.system(f"btrfs sub del /.boot/boot-{sarg} >/dev/null 2>&1")
-            os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{sarg} >/dev/null 2>&1")
-            os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{sarg} >/dev/null 2>&1")
-            os.system(f"btrfs sub snap -r /.boot/boot-chr /.boot/boot-{sarg} >/dev/null 2>&1")
-            os.system(f"btrfs sub del /.overlays/overlay-chr >/dev/null 2>&1")
-            os.system(f"btrfs sub del /.var/var-chr >/dev/null 2>&1")
-            os.system(f"btrfs sub del /.boot/boot-chr >/dev/null 2>&1")
-            print(f"tree {treename} was updated")
+            os.system(f"arch-chroot /.overlays/overlay-chr pacman -Syyu")
+            posttrans(sarg)
+        print(f"tree {treename} was updated")
 
 # Sync tree and all it's overlays
 def sync_tree(tree,treename):
@@ -333,22 +344,12 @@ def sync_tree(tree,treename):
             print(arg,sarg)
             order.remove(order[0])
             order.remove(order[0])
-            os.system(f"btrfs sub snap /.overlays/overlay-{sarg} /.overlays/overlay-chr >/dev/null 2>&1")
-            os.system(f"btrfs sub snap /.var/var-{sarg} /.var/var-chr >/dev/null 2>&1")
-            os.system(f"btrfs sub snap /.boot/boot-{sarg} /.boot/boot-chr >/dev/null 2>&1")
+            prepare(sarg)
             os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/ >/dev/null 2>&1")
             os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/systemd/* /.var/var-chr/lib/systemd/ >/dev/null 2>&1")
             os.system(f"cp --reflink=auto -r /.overlays/overlay-{arg}/* /.overlays/overlay-chr/ >/dev/null 2>&1")
-            os.system(f"btrfs sub del /.overlays/overlay-{sarg} >/dev/null 2>&1")
-            os.system(f"btrfs sub del /.var/var-{sarg} >/dev/null 2>&1")
-            os.system(f"btrfs sub del /.boot/boot-{sarg} >/dev/null 2>&1")
-            os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{sarg} >/dev/null 2>&1")
-            os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{sarg} >/dev/null 2>&1")
-            os.system(f"btrfs sub snap -r /.boot/boot-chr /.boot/boot-{sarg} >/dev/null 2>&1")
-            os.system(f"btrfs sub del /.overlays/overlay-chr >/dev/null 2>&1")
-            os.system(f"btrfs sub del /.var/var-chr >/dev/null 2>&1")
-            os.system(f"btrfs sub del /.boot/boot-chr >/dev/null 2>&1")
-            print(f"tree {treename} was synced")
+            posttrans(sarg)
+        print(f"tree {treename} was synced")
 
 # Clone tree
 def clone_as_tree(overlay):
@@ -459,7 +460,7 @@ def remove(overlay,pkg):
         print("changing base image is not allowed")
     else:
         prepare(overlay)
-        os.system(f"pacman -r /.overlays/overlay-chr -R {pkg}")
+        os.system(f"pacman -r /.overlays/overlay-chr -Rns {pkg}")
         posttrans(overlay)
 
 # Pass arguments to pacman
@@ -720,7 +721,11 @@ def main(args):
         elif arg == "sync" or arg == "tree-sync":
             sync_tree(fstree,args[args.index(arg)+1])
         elif arg == "tree-upgrade" or arg == "tupgrade":
+            upgrade(args[args.index(arg)+1])
             update_tree(fstree,args[args.index(arg)+1])
+        elif arg == "tree-rmpkg" or arg == "tremove":
+            remove(args[args.index(arg)+1], args[args.index(arg)+2])
+            remove_from_tree(fstree, args[args.index(arg) + 1], args[args.index(arg)+2])
         elif arg  == "tree":
             show_fstree()
         elif (arg == args[1]):
