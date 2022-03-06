@@ -377,8 +377,8 @@ def update_boot(overlay):
             tmp = "tmp0"
         part = get_part()
         prepare(overlay)
-        os.system(f"arch-chroot /mnt grub-mkconfig {part} -o /boot/grub/grub.cfg")
-        os.system(f"arch-chroot /mnt sed -i s/overlay-chr/overlay-{tmp}/g /boot/grub/grub.cfg")
+        os.system(f"arch-chroot /.overlays/overlay-chr grub-mkconfig {part} -o /boot/grub/grub.cfg")
+        os.system(f"arch-chroot /.overlays/overlay-chr sed -i s/overlay-chr/overlay-{tmp}/g /boot/grub/grub.cfg")
         posttrans(overlay)
 
 # Chroot into overlay
