@@ -369,6 +369,7 @@ def update_boot(overlay):
     if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
         print("cannot update boot, overlay doesn't exist")
     else:
+        unchr()
         tmp = get_tmp()
         if "tmp0" in tmp:
             tmp = "tmp"
@@ -701,8 +702,6 @@ def main(args):
             chroot(args[args.index(arg)+1])
         elif arg == "install" or arg == "i":
             install(args[args.index(arg)+1],args[args.index(arg)+2])
-        elif arg == "cinstall" or arg == "ci":
-            cinstall(overlay,args[args.index(arg)+1])
         elif arg == "add-branch" or arg == "branch":
             extend_branch(args[args.index(arg)+1])
         elif arg == "clone-branch" or arg == "cbranch":
