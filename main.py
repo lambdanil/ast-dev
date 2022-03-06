@@ -85,7 +85,6 @@ def main(args):
 #    os.system("sed -i '0,/@var/{s,@var,@.var/var-tmp,}' /mnt/etc/fstab")
     os.system("sed -i '0,/@boot/{s,@boot,@.boot/boot-tmp,}' /mnt/etc/fstab")
     os.system("mkdir -p /mnt/root/images")
-    os.system("echo 'base image' > /mnt/root/images/0-desc")
     os.system("arch-chroot /mnt btrfs sub set-default /.overlays/overlay-tmp")
     os.system("arch-chroot /mnt passwd")
     os.system("arch-chroot /mnt systemctl enable dhcpcd")

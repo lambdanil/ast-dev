@@ -50,6 +50,8 @@ def print_tree(tree):
             descfile.close()
         else:
             desc = ""
+        if str(node.name) == "0":
+            desc = "base image"
         if overlay != str(node.name):
             print("%s%s - %s" % (pre, node.name, desc))
         else:
