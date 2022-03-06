@@ -147,7 +147,7 @@ def get_part():
 
 # Get tmp partition state
 def get_tmp():
-    mount = str(subprocess.check_output("mount | grep 'on / type'", shell=True)) # Maybe not ideal? idk might fix(?) sometime
+    mount = str(subprocess.check_output("btrfs sub get-default /", shell=True)) # Maybe not ideal? idk might fix(?) sometime
     if "tmp0" in mount:
         return("tmp0")
     else:
@@ -156,7 +156,7 @@ def get_tmp():
 # Reverse tmp deploy image
 def rdeploy(overlay):
     tmp = get_tmp()
-    untmp()
+    runtmp()
     if "tmp0" in tmp:
         tmp = "tmp"
     else:
@@ -430,6 +430,13 @@ def untmp():
     os.system(f"btrfs sub del /.var/var-{tmp} >/dev/null 2>&1")
     os.system(f"btrfs sub del /.boot/boot-{tmp} >/dev/null 2>&1")
 
+def runtmp():
+    tmp = get_tmp()
+    os.system(f"btrfs sub del /.overlays/overlay-{tmp}/var >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.overlays/overlay-{tmp} >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.etc/etc-{tmp} >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.var/var-{tmp} >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.boot/boot-{tmp} >/dev/null 2>&1")
 
 # Install packages
 def install(overlay,pkg):
