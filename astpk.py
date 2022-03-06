@@ -322,7 +322,7 @@ def update_tree(tree,treename):
             os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/ >/dev/null 2>&1")
             os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/systemd/* /.var/var-chr/lib/systemd/ >/dev/null 2>&1")
             os.system(f"cp --reflink=auto -r /.overlays/overlay-{arg}/* /.overlays/overlay-chr/ >/dev/null 2>&1")
-            os.system(f"arch-chroot /.overlays/overlay-chr pacman -Syyu")
+            os.system(f"arch-chroot /.overlays/overlay-chr pacman --noconfirm -Syyu")
             posttrans(sarg)
         print(f"tree {treename} was updated")
 
@@ -460,7 +460,7 @@ def remove(overlay,pkg):
         print("changing base image is not allowed")
     else:
         prepare(overlay)
-        os.system(f"pacman -r /.overlays/overlay-chr -Rns {pkg}")
+        os.system(f"pacman -r /.overlays/overlay-chr --noconfirm -Rns {pkg}")
         posttrans(overlay)
 
 # Pass arguments to pacman
