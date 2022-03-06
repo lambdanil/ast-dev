@@ -185,140 +185,161 @@ def rdeploy(overlay):
 
 # Deploy image
 def deploy(overlay):
-    tmp = get_tmp()
-    untmp()
-#    unchr()
-    if "tmp0" in tmp:
-        tmp = "tmp"
+    if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
+        print("cannot deploy, overlay doesn't exist")
     else:
-        tmp = "tmp0"
-    etc = overlay
-    os.system(f"btrfs sub snap /.overlays/overlay-{overlay} /.overlays/overlay-{tmp}")
-    os.system(f"btrfs sub snap /.etc/etc-{overlay} /.etc/etc-{tmp}")
-    os.system(f"btrfs sub create /.var/var-{tmp}")
-    os.system(f"cp --reflink=auto -r /.var/var-{etc}/* /.var/var-{tmp}")
-    os.system(f"btrfs sub snap /.boot/boot-{overlay} /.boot/boot-{tmp}")
-    os.system(f"mkdir /.overlays/overlay-{tmp}/etc")
-    os.system(f"rm -rf /.overlays/overlay-{tmp}/var")
-    os.system(f"mkdir /.overlays/overlay-{tmp}/boot")
-    os.system(f"cp --reflink=auto -r /.etc/etc-{etc}/* /.overlays/overlay-{tmp}/etc")
-    os.system(f"btrfs sub snap /var /.overlays/overlay-{tmp}/var")
-    os.system(f"cp --reflink=auto -r /.boot/boot-{etc}/* /.overlays/overlay-{tmp}/boot")
-    os.system(f"echo '{overlay}' > /.overlays/overlay-{tmp}/etc/astpk.d/astpk-coverlay")
-    os.system(f"echo '{etc}' > /.overlays/overlay-{tmp}/etc/astpk.d/astpk-cetc")
-    os.system(f"echo '{overlay}' > /.etc/etc-{tmp}/astpk.d/astpk-coverlay")
-    os.system(f"echo '{etc}' > /.etc/etc-{tmp}/astpk.d/astpk-cetc")
+        tmp = get_tmp()
+        untmp()
+#    unchr()
+        if "tmp0" in tmp:
+            tmp = "tmp"
+        else:
+            tmp = "tmp0"
+        etc = overlay
+        os.system(f"btrfs sub snap /.overlays/overlay-{overlay} /.overlays/overlay-{tmp}")
+        os.system(f"btrfs sub snap /.etc/etc-{overlay} /.etc/etc-{tmp}")
+        os.system(f"btrfs sub create /.var/var-{tmp}")
+        os.system(f"cp --reflink=auto -r /.var/var-{etc}/* /.var/var-{tmp}")
+        os.system(f"btrfs sub snap /.boot/boot-{overlay} /.boot/boot-{tmp}")
+        os.system(f"mkdir /.overlays/overlay-{tmp}/etc")
+        os.system(f"rm -rf /.overlays/overlay-{tmp}/var")
+        os.system(f"mkdir /.overlays/overlay-{tmp}/boot")
+        os.system(f"cp --reflink=auto -r /.etc/etc-{etc}/* /.overlays/overlay-{tmp}/etc")
+        os.system(f"btrfs sub snap /var /.overlays/overlay-{tmp}/var")
+        os.system(f"cp --reflink=auto -r /.boot/boot-{etc}/* /.overlays/overlay-{tmp}/boot")
+        os.system(f"echo '{overlay}' > /.overlays/overlay-{tmp}/etc/astpk.d/astpk-coverlay")
+        os.system(f"echo '{etc}' > /.overlays/overlay-{tmp}/etc/astpk.d/astpk-cetc")
+        os.system(f"echo '{overlay}' > /.etc/etc-{tmp}/astpk.d/astpk-coverlay")
+        os.system(f"echo '{etc}' > /.etc/etc-{tmp}/astpk.d/astpk-cetc")
 #    update_boot(overlay)
-    switchtmp()
-    os.system(f"rm -rf /var/lib/pacman/*") # Clean pacman and systemd directories before copy
-    os.system(f"rm -rf /var/lib/systemd/*")
-    os.system(f"cp --reflink=auto -r /.var/var-{etc}/* /.overlays/overlay-{tmp}/var/")
-    os.system(f"cp --reflink=auto -r /.var/var-{etc}/lib/pacman/* /var/lib/pacman/") # Copy pacman and systemd directories
-    os.system(f"cp --reflink=auto -r /.var/var-{etc}/lib/systemd/* /var/lib/systemd/")
-    os.system(f"btrfs sub set-default /.overlays/overlay-{tmp}") # Set default volume
+        switchtmp()
+        os.system(f"rm -rf /var/lib/pacman/*") # Clean pacman and systemd directories before copy
+        os.system(f"rm -rf /var/lib/systemd/*")
+        os.system(f"cp --reflink=auto -r /.var/var-{etc}/* /.overlays/overlay-{tmp}/var/")
+        os.system(f"cp --reflink=auto -r /.var/var-{etc}/lib/pacman/* /var/lib/pacman/") # Copy pacman and systemd directories
+        os.system(f"cp --reflink=auto -r /.var/var-{etc}/lib/systemd/* /var/lib/systemd/")
+        os.system(f"btrfs sub set-default /.overlays/overlay-{tmp}") # Set default volume
 
 # Add node to branch
 def extend_branch(overlay):
-    i = findnew()
-    os.system(f"btrfs sub snap -r /.overlays/overlay-{overlay} /.overlays/overlay-{i}")
-    os.system(f"btrfs sub snap -r /.etc/etc-{overlay} /.etc/etc-{i}")
-    os.system(f"btrfs sub snap -r /.var/var-{overlay} /.var/var-{i}")
-    os.system(f"btrfs sub snap -r /.boot/boot-{overlay} /.boot/boot-{i}")
-    add_node_to_parent(fstree,overlay,i)
-    write_tree(fstree)
+    if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
+        print("cannot branch, overlay doesn't exist")
+    else:
+        i = findnew()
+        os.system(f"btrfs sub snap -r /.overlays/overlay-{overlay} /.overlays/overlay-{i}")
+        os.system(f"btrfs sub snap -r /.etc/etc-{overlay} /.etc/etc-{i}")
+        os.system(f"btrfs sub snap -r /.var/var-{overlay} /.var/var-{i}")
+        os.system(f"btrfs sub snap -r /.boot/boot-{overlay} /.boot/boot-{i}")
+        add_node_to_parent(fstree,overlay,i)
+        write_tree(fstree)
 
 # Clone branch under same parent,
 def clone_branch(overlay):
-    i = findnew()
-    os.system(f"btrfs sub snap -r /.overlays/overlay-{overlay} /.overlays/overlay-{i}")
-    os.system(f"btrfs sub snap -r /.etc/etc-{overlay} /.etc/etc-{i}")
-    os.system(f"btrfs sub snap -r /.var/var-{overlay} /.var/var-{i}")
-    os.system(f"btrfs sub snap -r /.boot/boot-{overlay} /.boot/boot-{i}")
-    add_node_to_level(fstree,overlay,i)
-    write_tree(fstree)
+    if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
+        print("cannot clone, overlay doesn't exist")
+    else:
+        i = findnew()
+        os.system(f"btrfs sub snap -r /.overlays/overlay-{overlay} /.overlays/overlay-{i}")
+        os.system(f"btrfs sub snap -r /.etc/etc-{overlay} /.etc/etc-{i}")
+        os.system(f"btrfs sub snap -r /.var/var-{overlay} /.var/var-{i}")
+        os.system(f"btrfs sub snap -r /.boot/boot-{overlay} /.boot/boot-{i}")
+        add_node_to_level(fstree,overlay,i)
+        write_tree(fstree)
 
 # Clone under specified parent
 def clone_under(overlay, branch):
-    i = findnew()
-    os.system(f"btrfs sub snap -r /.overlays/overlay-{branch} /.overlays/overlay-{i}")
-    os.system(f"btrfs sub snap -r /.etc/etc-{branch} /.etc/etc-{i}")
-    os.system(f"btrfs sub snap -r /.var/var-{branch} /.var/var-{i}")
-    os.system(f"btrfs sub snap -r /.boot/boot-{branch} /.boot/boot-{i}")
-    add_node_to_parent(fstree,overlay,i)
-    write_tree(fstree)
+    if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
+        print("cannot clone, overlay doesn't exist")
+    else:
+        i = findnew()
+        os.system(f"btrfs sub snap -r /.overlays/overlay-{branch} /.overlays/overlay-{i}")
+        os.system(f"btrfs sub snap -r /.etc/etc-{branch} /.etc/etc-{i}")
+        os.system(f"btrfs sub snap -r /.var/var-{branch} /.var/var-{i}")
+        os.system(f"btrfs sub snap -r /.boot/boot-{branch} /.boot/boot-{i}")
+        add_node_to_parent(fstree,overlay,i)
+        write_tree(fstree)
 
 # Recursivly run an update in tree
 def update_tree(tree,treename):
-    unchr()
-    order = recurstree(tree, treename)
-    if len(order) > 2:
-        order.remove(order[0])
-        order.remove(order[0])
-    while True:
-        if len(order) < 2:
-            break
-        arg = order[0]
-        sarg = order[1]
-        print(arg,sarg)
-        order.remove(order[0])
-        order.remove(order[0])
-        os.system(f"btrfs sub snap /.overlays/overlay-{sarg} /.overlays/overlay-chr")
-        os.system(f"btrfs sub snap /.var/var-{sarg} /.var/var-chr")
-        os.system(f"btrfs sub snap /.boot/boot-{sarg} /.boot/boot-chr")
-        os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/")
-        os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/systemd/* /.var/var-chr/lib/systemd/")
-        os.system(f"cp --reflink=auto -r /.overlays/overlay-{arg}/* /.overlays/overlay-chr/")
-        os.system(f"arch-chroot /mnt pacman -Syyu")
-        os.system(f"btrfs sub del /.overlays/overlay-{sarg}")
-        os.system(f"btrfs sub del /.var/var-{sarg}")
-        os.system(f"btrfs sub del /.boot/boot-{sarg}")
-        os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{sarg}")
-        os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{sarg}")
-        os.system(f"btrfs sub snap -r /.boot/boot-chr /.boot/boot-{sarg}")
-        os.system(f"btrfs sub del /.overlays/overlay-chr")
-        os.system(f"btrfs sub del /.var/var-chr")
-        os.system(f"btrfs sub del /.boot/boot-chr")
+    if not (os.path.exists(f"/.overlays/overlay-{treename}")):
+        print("cannot update, tree doesn't exist")
+    else:
+        unchr()
+        order = recurstree(tree, treename)
+        if len(order) > 2:
+            order.remove(order[0])
+            order.remove(order[0])
+        while True:
+            if len(order) < 2:
+                break
+            arg = order[0]
+            sarg = order[1]
+            print(arg,sarg)
+            order.remove(order[0])
+            order.remove(order[0])
+            os.system(f"btrfs sub snap /.overlays/overlay-{sarg} /.overlays/overlay-chr")
+            os.system(f"btrfs sub snap /.var/var-{sarg} /.var/var-chr")
+            os.system(f"btrfs sub snap /.boot/boot-{sarg} /.boot/boot-chr")
+            os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/")
+            os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/systemd/* /.var/var-chr/lib/systemd/")
+            os.system(f"cp --reflink=auto -r /.overlays/overlay-{arg}/* /.overlays/overlay-chr/")
+            os.system(f"arch-chroot /mnt pacman -Syyu")
+            os.system(f"btrfs sub del /.overlays/overlay-{sarg}")
+            os.system(f"btrfs sub del /.var/var-{sarg}")
+            os.system(f"btrfs sub del /.boot/boot-{sarg}")
+            os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{sarg}")
+            os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{sarg}")
+            os.system(f"btrfs sub snap -r /.boot/boot-chr /.boot/boot-{sarg}")
+            os.system(f"btrfs sub del /.overlays/overlay-chr")
+            os.system(f"btrfs sub del /.var/var-chr")
+            os.system(f"btrfs sub del /.boot/boot-chr")
 
 # Sync tree and all it's overlays
 def sync_tree(tree,treename):
-    unchr()
-    order = recurstree(tree, treename)
-    if len(order) > 2:
-        order.remove(order[0])
-        order.remove(order[0])
-    while True:
-        if len(order) < 2:
-            break
-        arg = order[0]
-        sarg = order[1]
-        print(arg,sarg)
-        order.remove(order[0])
-        order.remove(order[0])
-        os.system(f"btrfs sub snap /.overlays/overlay-{sarg} /.overlays/overlay-chr")
-        os.system(f"btrfs sub snap /.var/var-{sarg} /.var/var-chr")
-        os.system(f"btrfs sub snap /.boot/boot-{sarg} /.boot/boot-chr")
-        os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/")
-        os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/systemd/* /.var/var-chr/lib/systemd/")
-        os.system(f"cp --reflink=auto -r /.overlays/overlay-{arg}/* /.overlays/overlay-chr/")
-        os.system(f"btrfs sub del /.overlays/overlay-{sarg}")
-        os.system(f"btrfs sub del /.var/var-{sarg}")
-        os.system(f"btrfs sub del /.boot/boot-{sarg}")
-        os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{sarg}")
-        os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{sarg}")
-        os.system(f"btrfs sub snap -r /.boot/boot-chr /.boot/boot-{sarg}")
-        os.system(f"btrfs sub del /.overlays/overlay-chr")
-        os.system(f"btrfs sub del /.var/var-chr")
-        os.system(f"btrfs sub del /.boot/boot-chr")
+    if not (os.path.exists(f"/.overlays/overlay-{treename}")):
+        print("cannot sync, tree doesn't exist")
+    else:
+        unchr()
+        order = recurstree(tree, treename)
+        if len(order) > 2:
+            order.remove(order[0])
+            order.remove(order[0])
+        while True:
+            if len(order) < 2:
+                break
+            arg = order[0]
+            sarg = order[1]
+            print(arg,sarg)
+            order.remove(order[0])
+            order.remove(order[0])
+            os.system(f"btrfs sub snap /.overlays/overlay-{sarg} /.overlays/overlay-chr")
+            os.system(f"btrfs sub snap /.var/var-{sarg} /.var/var-chr")
+            os.system(f"btrfs sub snap /.boot/boot-{sarg} /.boot/boot-chr")
+            os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/pacman/local/* /.var/var-chr/lib/pacman/local/")
+            os.system(f"cp --reflink=auto -r /.var/var-{arg}/lib/systemd/* /.var/var-chr/lib/systemd/")
+            os.system(f"cp --reflink=auto -r /.overlays/overlay-{arg}/* /.overlays/overlay-chr/")
+            os.system(f"btrfs sub del /.overlays/overlay-{sarg}")
+            os.system(f"btrfs sub del /.var/var-{sarg}")
+            os.system(f"btrfs sub del /.boot/boot-{sarg}")
+            os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{sarg}")
+            os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{sarg}")
+            os.system(f"btrfs sub snap -r /.boot/boot-chr /.boot/boot-{sarg}")
+            os.system(f"btrfs sub del /.overlays/overlay-chr")
+            os.system(f"btrfs sub del /.var/var-chr")
+            os.system(f"btrfs sub del /.boot/boot-chr")
 
 # Clone tree
 def clone_as_tree(overlay):
-    i = findnew()
-    os.system(f"btrfs sub snap -r /.overlays/overlay-{overlay} /.overlays/overlay-{i}")
-    os.system(f"btrfs sub snap -r /.etc/etc-{overlay} /.etc/etc-{i}")
-    os.system(f"btrfs sub snap -r /.var/var-{overlay} /.var/var-{i}")
-    os.system(f"btrfs sub snap -r /.boot/boot-{overlay} /.boot/boot-{i}")
-    append_base_tree(fstree,i)
-    write_tree(fstree)
+    if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
+        print("cannot clone, overlay doesn't exist")
+    else:
+        i = findnew()
+        os.system(f"btrfs sub snap -r /.overlays/overlay-{overlay} /.overlays/overlay-{i}")
+        os.system(f"btrfs sub snap -r /.etc/etc-{overlay} /.etc/etc-{i}")
+        os.system(f"btrfs sub snap -r /.var/var-{overlay} /.var/var-{i}")
+        os.system(f"btrfs sub snap -r /.boot/boot-{overlay} /.boot/boot-{i}")
+        append_base_tree(fstree,i)
+        write_tree(fstree)
 
 # Creates new tree from base file
 def new_overlay():
@@ -345,18 +366,28 @@ def update_etc():
 
 # Update boot
 def update_boot(overlay):
-    tmp = get_tmp()
-    part = get_part()
-    prepare(overlay)
-    os.system(f"arch-chroot /mnt grub-mkconfig {part} -o /boot/grub/grub.cfg")
-    os.system(f"arch-chroot /mnt sed -i s/overlay-chr/overlay-{tmp}/g /boot/grub/grub.cfg")
-    posttrans(overlay)
+    if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
+        print("cannot update boot, overlay doesn't exist")
+    else:
+        tmp = get_tmp()
+        if "tmp0" in tmp:
+            tmp = "tmp"
+        else:
+            tmp = "tmp0"
+        part = get_part()
+        prepare(overlay)
+        os.system(f"arch-chroot /mnt grub-mkconfig {part} -o /boot/grub/grub.cfg")
+        os.system(f"arch-chroot /mnt sed -i s/overlay-chr/overlay-{tmp}/g /boot/grub/grub.cfg")
+        posttrans(overlay)
 
 # Chroot into overlay
 def chroot(overlay):
-    prepare(overlay)
-    os.system(f"arch-chroot /.overlays/overlay-chr") # Arch specific chroot command because pacman is weird without it
-    posttrans(overlay)
+    if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
+        print("cannot chroot, overlay doesn't exist")
+    else:
+        prepare(overlay)
+        os.system(f"arch-chroot /.overlays/overlay-chr") # Arch specific chroot command because pacman is weird without it
+        posttrans(overlay)
 
 # Clean chroot mount dirs
 def unchr():
@@ -381,36 +412,48 @@ def untmp():
 
 # Install packages
 def install(overlay,pkg):
-    prepare(overlay)
-    os.system(f"pacman -r /.overlays/overlay-chr -S {pkg}") # Actually doesn't chroot but uses target root instead, doesn't really make a difference, same for remove function
-    posttrans(overlay)
+    if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
+        print("cannot install, overlay doesn't exist")
+    else:
+        prepare(overlay)
+        os.system(f"pacman -r /.overlays/overlay-chr -S {pkg}") # Actually doesn't chroot but uses target root instead, doesn't really make a difference, same for remove function
+        posttrans(overlay)
 
 # Remove packages
 def remove(overlay,pkg):
-    prepare(overlay)
-    os.system(f"pacman -r /.overlays/overlay-chr -R {pkg}")
-    posttrans(overlay)
+    if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
+        print("cannot remove, overlay doesn't exist")
+    else:
+        prepare(overlay)
+        os.system(f"pacman -r /.overlays/overlay-chr -R {pkg}")
+        posttrans(overlay)
 
 # Pass arguments to pacman
 def pac(overlay,arg):
-    prepare(overlay)
-    os.system(f"arch-chroot /.overlays/overlay-chr pacman {arg}")
-    posttrans(overlay)
+    if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
+        print("cannot run pacman, overlay doesn't exist")
+    else:
+        prepare(overlay)
+        os.system(f"arch-chroot /.overlays/overlay-chr pacman {arg}")
+        posttrans(overlay)
 
 # Delete tree or branch
 def delete(overlay):
-    children = return_children(fstree,overlay)
-    os.system(f"btrfs sub del /.boot/boot-{overlay}")
-    os.system(f"btrfs sub del /.etc/etc-{overlay}")
-    os.system(f"btrfs sub del /.var/var-{overlay}")
-    os.system(f"btrfs sub del /.overlays/overlay-{overlay}")
-    for child in children: # This deleted the node itself along with it's children
-        os.system(f"btrfs sub del /.boot/boot-{child}")
-        os.system(f"btrfs sub del /.etc/etc-{child}")
-        os.system(f"btrfs sub del /.var/var-{child}")
-        os.system(f"btrfs sub del /.overlays/overlay-{child}")
-    remove_node(fstree,overlay) # Remove node from tree or root
-    write_tree(fstree)
+    if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
+        print("cannot delete, tree doesn't exist")
+    else:
+        children = return_children(fstree,overlay)
+        os.system(f"btrfs sub del /.boot/boot-{overlay}")
+        os.system(f"btrfs sub del /.etc/etc-{overlay}")
+        os.system(f"btrfs sub del /.var/var-{overlay}")
+        os.system(f"btrfs sub del /.overlays/overlay-{overlay}")
+        for child in children: # This deleted the node itself along with it's children
+            os.system(f"btrfs sub del /.boot/boot-{child}")
+            os.system(f"btrfs sub del /.etc/etc-{child}")
+            os.system(f"btrfs sub del /.var/var-{child}")
+            os.system(f"btrfs sub del /.overlays/overlay-{child}")
+        remove_node(fstree,overlay) # Remove node from tree or root
+        write_tree(fstree)
 
 # Mount base to chroot dir for transaction
 def prepare_base():
@@ -515,25 +558,12 @@ def posttrans(overlay):
 
 # Upgrade overlay
 def upgrade(overlay):
-    prepare(overlay)
-    os.system(f"pacman -r /.overlays/overlay-chr -Syyu")
-    posttrans(overlay)
-
-# Upgrade current overlay, likely unnecessary, also broken
-def cupgrade(overlay):
-    i = findnew()
-    prepare(overlay)
-    os.system(f"pacman -r /.overlays/overlay-chr -Syyu")
-    posttrans(i)
-    deploy(i)
-
-# Install inside current overlay, likely unnecessary, also broken
-def cinstall(overlay,pkg):
-    i = findnew()
-    prepare(overlay)
-    os.system(f"pacman -r /.overlays/overlay-chr -S {pkg}")
-    posttrans(i)
-    deploy(i)
+    if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
+        print("cannot upgrade, overlay doesn't exist")
+    else:
+        prepare(overlay)
+        os.system(f"pacman -r /.overlays/overlay-chr -Syyu")
+        posttrans(overlay)
 
 def chroot_check():
     chroot = True # When inside chroot
@@ -635,12 +665,15 @@ def findnew():
 
 # Build image from recipe, currently completely untested, likely broken
 def mk_img(imgpath):
-    i = findnew()
-    new_overlay()
-    prepare(i)
-    os.system(f"cp -r {imgpath} /.overlays/overlay-chr/init.py")
-    os.system("arch-chroot /.overlays/overlay-chr python3 /init.py")
-    posttrans(i)
+    if not (os.path.exists(f"{imgpath}")):
+        print("cannot create image, image file doesn't exist")
+    else:
+        i = findnew()
+        new_overlay()
+        prepare(i)
+        os.system(f"cp -r {imgpath} /.overlays/overlay-chr/init.py")
+        os.system("arch-chroot /.overlays/overlay-chr python3 /init.py")
+        posttrans(i)
 
 # Main function
 def main(args):
