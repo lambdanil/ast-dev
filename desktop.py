@@ -12,7 +12,7 @@ os.system(f"mkdir /home/{user}")
 os.system(f"chown -R {user} /home/{user}")
 os.system(f"passwd -l root")
 os.system(f"chmod +w /etc/sudoers")
-os.system(f"echo '%wheel ALL=(ALL:ALL\) ALL' > /etc/sudoers")
+os.system(f"echo '%wheel ALL=(ALL:ALL) ALL' > /etc/sudoers")
 os.system(f"chmod -x /etc/sudoers")
 
 os.system(f"systemctl enable sddm")
