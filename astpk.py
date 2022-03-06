@@ -147,7 +147,7 @@ def get_part():
 
 # Get tmp partition state
 def get_tmp():
-    mount = str(subprocess.check_output("btrfs sub get-default /", shell=True)) # shell=True is probably not ideal? idk might fix(?) sometime
+    mount = str(subprocess.check_output("mount | grep 'on / type'", shell=True)) # Maybe not ideal? idk might fix(?) sometime
     if "tmp0" in mount:
         return("tmp0")
     else:
@@ -156,7 +156,7 @@ def get_tmp():
 # Reverse tmp deploy image
 def rdeploy(overlay):
     tmp = get_tmp()
-    runtmp()
+    untmp()
     etc = overlay
     os.system(f"btrfs sub snap /.overlays/overlay-{overlay} /.overlays/overlay-{tmp}")
     os.system(f"btrfs sub snap /.etc/etc-{overlay} /.etc/etc-{tmp}")
@@ -412,14 +412,6 @@ def untmp():
     os.system(f"btrfs sub del /.boot/boot-{tmp}")
 
 
-def runtmp():
-    tmp = get_tmp()
-    os.system(f"btrfs sub del /.overlays/overlay-{tmp}/var")
-    os.system(f"btrfs sub del /.overlays/overlay-{tmp}")
-    os.system(f"btrfs sub del /.etc/etc-{tmp}")
-    os.system(f"btrfs sub del /.var/var-{tmp}")
-    os.system(f"btrfs sub del /.boot/boot-{tmp}")
-
 # Install packages
 def install(overlay,pkg):
     if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
@@ -619,10 +611,6 @@ def switchtmp():
 def rswitchtmp():
     mount = get_tmp()
     part = get_part()
-    if "tmp0" in mount:
-        mount = "tmp"
-    else:
-        mount = "tmp0"
     os.system(f"mkdir /etc/mnt")
     os.system(f"mkdir /etc/mnt/boot")
     os.system(f"mount {part} -o subvol=@boot /etc/mnt/boot") # Mount boot partition for writing
