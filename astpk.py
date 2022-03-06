@@ -249,6 +249,8 @@ def clone_branch(overlay):
         os.system(f"btrfs sub snap -r /.boot/boot-{overlay} /.boot/boot-{i}")
         add_node_to_level(fstree,overlay,i)
         write_tree(fstree)
+        desc = str(f"clone of {overlay}")
+        write_desc(i, desc)
 
 # Clone under specified parent
 def clone_under(overlay, branch):
@@ -262,6 +264,8 @@ def clone_under(overlay, branch):
         os.system(f"btrfs sub snap -r /.boot/boot-{branch} /.boot/boot-{i}")
         add_node_to_parent(fstree,overlay,i)
         write_tree(fstree)
+        desc = str(f"clone of {overlay}")
+        write_desc(i, desc)
 
 # Recursivly run an update in tree
 def update_tree(tree,treename):
@@ -344,6 +348,8 @@ def clone_as_tree(overlay):
         os.system(f"btrfs sub snap -r /.boot/boot-{overlay} /.boot/boot-{i}")
         append_base_tree(fstree,i)
         write_tree(fstree)
+        desc = str(f"clone of {overlay}")
+        write_desc(i, desc)
 
 # Creates new tree from base file
 def new_overlay():
@@ -396,11 +402,11 @@ def chroot(overlay):
 
 # Clean chroot mount dirs
 def unchr():
-    os.system(f"btrfs sub del /.etc/etc-chr")
-    os.system(f"btrfs sub del /.var/var-chr")
-    os.system(f"btrfs sub del /.boot/boot-chr")
-    os.system(f"btrfs sub del /.overlays/overlay-chr/*")
-    os.system(f"btrfs sub del /.overlays/overlay-chr")
+    os.system(f"btrfs sub del /.etc/etc-chr >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.var/var-chr >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.boot/boot-chr >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.overlays/overlay-chr/* >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.overlays/overlay-chr >/dev/null 2>&1")
 
 # Clean tmp dirs
 def untmp():
@@ -409,11 +415,11 @@ def untmp():
         tmp = "tmp"
     else:
         tmp = "tmp0"
-    os.system(f"btrfs sub del /.overlays/overlay-{tmp}/var")
-    os.system(f"btrfs sub del /.overlays/overlay-{tmp}")
-    os.system(f"btrfs sub del /.etc/etc-{tmp}")
-    os.system(f"btrfs sub del /.var/var-{tmp}")
-    os.system(f"btrfs sub del /.boot/boot-{tmp}")
+    os.system(f"btrfs sub del /.overlays/overlay-{tmp}/var >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.overlays/overlay-{tmp} >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.etc/etc-{tmp} >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.var/var-{tmp} >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.boot/boot-{tmp} >/dev/null 2>&1")
 
 
 # Install packages
@@ -445,9 +451,15 @@ def pac(overlay,arg):
 
 # Delete tree or branch
 def delete(overlay):
+    print(f"Are you sure you want to delete overlay {overlay}? (y/N)")
+    choice = input("> ")
+    run = True
+    if choice.casefold() != "y":
+        print("Aborted")
+        run = False
     if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
         print("cannot delete, tree doesn't exist")
-    else:
+    elif run == True:
         children = return_children(fstree,overlay)
         os.system(f"btrfs sub del /.boot/boot-{overlay}")
         os.system(f"btrfs sub del /.etc/etc-{overlay}")
