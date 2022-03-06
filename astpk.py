@@ -621,19 +621,6 @@ def rswitchtmp():
     os.system("umount /etc/mnt/boot")
 #    os.system("reboot") # Enable for non-testing versions
 
-# List overlays, quite unnecessary with the tree now :)
-def ls_overlay():
-    overlays = os.listdir("/.overlays")
-    descs = []
-    for overlay in overlays:
-        if os.path.isfile(f"/root/images/desc-{overlay}"):
-            overfile = open(f"/root/images/desc-{overlay}")
-            descs.append(str(overfile.readline()))
-        else:
-            descs.append("")
-    for index in range(0, len(overlays)-1,+1):
-        print(f"{overlays[index]} - {descs[index]}")
-
 # Find new unused image dir
 def findnew():
     i = 0
@@ -695,8 +682,6 @@ def main(args):
             clone_under(args[args.index(arg)+1], args[args.index(arg)+2])
         elif arg == "clone" or arg == "tree-clone":
             clone_as_tree(args[args.index(arg)+1])
-        elif arg == "list" or arg == "l":
-            ls_overlay()
         elif arg == "mk-img" or arg == "img":
             mk_img(args[args.index(arg)+1])
         elif arg == "deploy":
