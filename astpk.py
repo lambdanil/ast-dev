@@ -248,7 +248,7 @@ def clone_branch(overlay):
 
 # Clone under specified parent
 def clone_under(overlay, branch):
-    if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
+    if not (os.path.exists(f"/.overlays/overlay-{overlay}")) or (not(os.path.exists(f"/.overlays/overlay-{branch}"))):
         print("cannot clone, overlay doesn't exist")
     else:
         i = findnew()
