@@ -156,11 +156,7 @@ def get_tmp():
 # Reverse tmp deploy image
 def rdeploy(overlay):
     tmp = get_tmp()
-    if "tmp0" in tmp:
-        tmp = "tmp"
-    else:
-        tmp = "tmp0"
-    untmp()
+    runtmp()
     etc = overlay
     os.system(f"btrfs sub snap /.overlays/overlay-{overlay} /.overlays/overlay-{tmp}")
     os.system(f"btrfs sub snap /.etc/etc-{overlay} /.etc/etc-{tmp}")
@@ -409,6 +405,15 @@ def untmp():
         tmp = "tmp"
     else:
         tmp = "tmp0"
+    os.system(f"btrfs sub del /.overlays/overlay-{tmp}/var")
+    os.system(f"btrfs sub del /.overlays/overlay-{tmp}")
+    os.system(f"btrfs sub del /.etc/etc-{tmp}")
+    os.system(f"btrfs sub del /.var/var-{tmp}")
+    os.system(f"btrfs sub del /.boot/boot-{tmp}")
+
+
+def runtmp():
+    tmp = get_tmp()
     os.system(f"btrfs sub del /.overlays/overlay-{tmp}/var")
     os.system(f"btrfs sub del /.overlays/overlay-{tmp}")
     os.system(f"btrfs sub del /.etc/etc-{tmp}")
