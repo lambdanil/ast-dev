@@ -70,7 +70,7 @@ def add_node_to_parent(tree, id, val):
 # Clone within node
 def add_node_to_level(tree,id, val): # Broken, likely useless, probably remove later
     npar = get_parent(tree, id)
-    par = (anytree.find(tree, filter_=lambda node: ("x"+str(node.name)+"x") in ("x"+str(id)+"x")))
+    par = (anytree.find(tree, filter_=lambda node: ("x"+str(node.name)+"x") in ("x"+str(npar)+"x")))
     add = anytree.Node(val, parent=par)
 
 # Remove node from tree
@@ -713,7 +713,7 @@ def main(args):
             mk_img(args[args.index(arg)+1])
         elif arg == "deploy":
             deploy(args[args.index(arg)+1])
-        elif arg == "rdeploy" or arg == "rescue-deploy":
+        elif arg == "rollback":
             deploy(args[args.index(arg)+1])
         elif arg == "upgrade" or arg == "up":
             upgrade(args[args.index(arg)+1])
