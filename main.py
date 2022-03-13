@@ -18,8 +18,8 @@ def main(args):
         efi = False
 #    efi = False #
     os.system(f"mount {args[1]} /mnt")
-    btrdirs = ["@","@.etc","@.overlays","@home","@tmp","@root","@.var","@var","@etc","@boot","@.boot"]
-    mntdirs = ["",".etc",".overlays","home","tmp","root",".var","var","etc","boot",".boot"]
+    btrdirs = ["@","@.etc","@sys","@.overlays","@home","@tmp","@root","@.var","@var","@etc","@boot","@.boot"]
+    mntdirs = ["",".etc","sys",".overlays","home","tmp","root",".var","var","etc","boot",".boot"]
     for btrdir in btrdirs:
         os.system(f"btrfs sub create /mnt/{btrdir}")
     os.system(f"umount /mnt")
@@ -48,13 +48,17 @@ def main(args):
     os.system(f"echo '0' > /mnt/etc/astpk.d/astpk-coverlay")
     os.system(f"echo '0' > /mnt/etc/astpk.d/astpk-cetc")
 
-    os.system(f"echo 'NAME=\"astOS\"' >> /mnt/etc/os-release")
+    os.system(f"echo 'NAME=\"astOS\"' > /mnt/etc/os-release")
     os.system(f"echo 'PRETTY_NAME=\"astOS\"' >> /mnt/etc/os-release")
     os.system(f"echo 'ID=astos' >> /mnt/etc/os-release")
     os.system(f"echo 'BUILD_ID=rolling' >> /mnt/etc/os-release")
     os.system(f"echo 'ANSI_COLOR=\"38;2;23;147;209\"' >> /mnt/etc/os-release")
     os.system(f"echo 'HOME_URL=\"https://github.com/CuBeRJAN/astOS\"' >> /mnt/etc/os-release")
     os.system(f"echo 'LOGO=astos-logo' >> /mnt/etc/os-release")
+    
+    os.system(f"echo 'DISTRIB_ID=\"astOS\"' > /mnt/etc/lsb-release")
+    os.system(f"echo 'DISTRIB_RELEASE=\"rolling\"' >> /mnt/etc/lsb-release")
+    os.system(f"echo 'DISTRIB_DESCRIPTION=astOS' >> /mnt/etc/lsb-release")
 
     while True:
         print("Select a timezone (type list to list):")
@@ -62,7 +66,7 @@ def main(args):
         if zone == "list":
             os.system("ls /usr/share/zoneinfo | less")
         else:
-            timezone = str(f"/usr/share/timezone/{zone}")
+            timezone = str(f"/usr/share/zoneinfo/{zone}")
             break
     os.system(f"arch-chroot /mnt ln -sf {timezone} /etc/localtime")
     print("Uncomment your desired locale:")
@@ -87,6 +91,13 @@ def main(args):
     os.system("mkdir -p /mnt/root/images")
     os.system("arch-chroot /mnt btrfs sub set-default /.overlays/overlay-tmp")
     os.system("arch-chroot /mnt passwd")
+    while True:
+        print("did your password set properly (y/n)?")
+        reply = input("> ")
+        if reply.casefold() == "y":
+            break
+        else:
+            os.system("arch-chroot /mnt passwd")
     os.system("arch-chroot /mnt systemctl enable dhcpcd")
     os.system("mkdir -p /mnt/var/astpk/")
     os.system("echo {\\'name\\': \\'root\\', \\'children\\': [{\\'name\\': \\'0\\'}]} > /mnt/var/astpk/fstree")
