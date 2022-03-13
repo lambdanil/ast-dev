@@ -1,6 +1,8 @@
 # astOS (Arch Snapshot Tree OS)
 ### Neměnná distribuce založená na archi využívající snapshoty btrfs.  
 
+![astos-logo](logo.jpg)
+
 ---
 
 ## Obsah
@@ -257,26 +259,15 @@ ast upgrade <snapshot>
 ast tree-update <strom>
 ```
 
-* ast podporuje také automatické aktualizace, ty automaticky klonují, pak aktualizují systém a výstupní kód výstupu zapíší do souboru
-* Tím se také vytvoří nový snímek pro zpětné vrácení v případě, že aktualizace způsobí problémy.
-* Soubor update.py obsahuje jednoduchý skript pro automatickou aktualizaci systému a nasazení v případě úspěchu, můžete přidat skript crontab, který spustí update.py pro automatickou aktualizaci systému
-```
-ast auto-upgrade
-```
-
-* Chcete-li zjistit stav a datum poslední automatické aktualizace, spusťte příkaz
-
-```
-ast check
-``` 
-
 * Tuto funkci lze nakonfigurovat ve skriptu (tj. ve skriptu crontab) pro snadné a bezpečné automatické aktualizace.
 
 ## Známé chyby
 
 * Při spuštění ast bez argumentů - IndexError: index seznamu mimo rozsah
 * Při spuštění ast bez práv roota se místo chybové zprávy zobrazí chyba s odepřenými právy.
-* GDM a LightDM nemusí fungovat  
+* GDM a LightDM nemusí fungovat
+* Při zapnutí a vypnutí systému "Error: failed to remount root and boot filesystems"
+* Nefunuguje swap oddíl, je doporučeno použít swapfile nebo zram  
 * Docker má problémy s oprávněními, pro opravu spusťte
 
 ```

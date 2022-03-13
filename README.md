@@ -1,6 +1,8 @@
 # astOS (Arch Snapshot Tree OS)
 ### An immutable Arch based distribution utilizing btrfs snapshots  
 
+![astos-logo](logo.jpg)
+
 ---
 
 ## Table of contents
@@ -254,19 +256,6 @@ ast upgrade <snapshot>
 ast tree-upgrade <tree>
 ```
 
-* ast also supports automatic updates, these will automatically clone, then upgrade the system and write exit code of output into a file
-* This will also create a new snapshot for rollback in case the update causes issues
-* The file update.py includes a simple script to automatically update the system and deploy if succesful, you can add a crontab script to run update.py to automatically update your system
-```
-ast auto-upgrade
-```
-
-* To check the status and date of the last automatic upgrade run
-
-```
-ast check
-``` 
-
 * This can be configured in a script (ie. a crontab script) for easy and safe automatic updates
 
 
@@ -275,11 +264,13 @@ ast check
 * When running ast without arguments - IndexError: list index out of range
 * Running ast without root permissions shows permission denied errors instead of an error message
 * GDM and LightDM may not work  
+* Swap partition doesn't work, it's recommended to use a swapfile or zram instead
+* Remount error message on boot and shutdown
 * Docker has issues with permissions, to fix run
-
 ```
 sudo chmod 666 /var/run/docker.sock
 ```
+
 * If you run into any issues, report them on [the issues page](https://github.com/CuBeRJAN/astOS/issues)
 
 # Contributing

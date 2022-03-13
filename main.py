@@ -7,10 +7,15 @@ args = list(sys.argv)
 # startup-service; startup; astpk-part; astpk-cbase; astpk-coverlay; astpk-cetc; astpk-firstboot
 
 def main(args):
-    os.system("pacman -Sy")
-    os.system("pacman -S vim")
-    confirm = "n"
-    os.system("lsblk")
+    while True:
+        print("Select profile:\n1. Minimal install\n2. Gnome desktop")
+        sprofile = input("> ")
+        if sprofile == "1":
+            GnomeInstall = False
+            break
+        if sprofile == "2":
+            GnomeInstall = True
+            break
     os.system(f"mkfs.btrfs -f {args[1]}")
     if os.path.exists("/sys/firmware/efi"):
         efi = True
@@ -60,26 +65,10 @@ def main(args):
     os.system(f"echo 'DISTRIB_RELEASE=\"rolling\"' >> /mnt/etc/lsb-release")
     os.system(f"echo 'DISTRIB_DESCRIPTION=astOS' >> /mnt/etc/lsb-release")
 
-    while True:
-        print("Select a timezone (type list to list):")
-        zone = input("> ")
-        if zone == "list":
-            os.system("ls /usr/share/zoneinfo | less")
-        else:
-            timezone = str(f"/usr/share/zoneinfo/{zone}")
-            break
-    os.system(f"arch-chroot /mnt ln -sf {timezone} /etc/localtime")
-    print("Uncomment your desired locale:")
-    input()
-    os.system("vim /mnt/etc/locale.gen")
+    os.system("echo 'en_US UTF-8' >> /mnt/etc/locale.gen")
     os.system(f"arch-chroot /mnt locale-gen")
     os.system(f"arch-chroot /mnt hwclock --systohc")
-    print("Set locale in format 'LANG=en_US.UTF8'")
-    input()
-    os.system(f"vim /mnt/etc/locale.conf")
-    print("Set keyload in format 'KEYMAP=us'")
-    input()
-    os.system(f"vim /mnt/etc/vconsole.conf")
+    os.system(f"echo 'LANG=en_US.UTF-8' > /mnt/etc/locale.conf")
     print("Enter hostname:")
     hostname = input("> ")
     os.system(f"echo {hostname} > /mnt/etc/hostname")
@@ -108,6 +97,12 @@ def main(args):
     os.system("cp ./astpk.py /mnt/usr/bin/ast")
     os.system("arch-chroot /mnt chmod +x /usr/bin/ast")
     os.system("btrfs sub snap -r /mnt /mnt/.overlays/overlay-0")
+    if GnomeInstall:
+        gpkgs = ["gnome","gnome-extra","gnome-themes-extra","flatpak"]
+        pkgstr = str(" ".join(gpkgs))
+        os.system("arch-chroot /mnt /usr/bin/ast clone 0")
+        os.system("arch-chroot /mnt /usr/bin/ast desc 1 GNOME desktop")
+        os.system(f"arch-chroot /mnt /usr/bin/ast run 1 pacman -S {pkgstr}")
     os.system("btrfs sub create /mnt/.etc/etc-tmp")
     os.system("btrfs sub create /mnt/.var/var-tmp")
     os.system("btrfs sub create /mnt/.boot/boot-tmp")
@@ -140,6 +135,8 @@ def main(args):
     os.system("cp --reflink=auto -r /mnt/.etc/etc-0/* /mnt/.overlays/overlay-tmp/etc")
     os.system("cp --reflink=auto -r /mnt/.var/var-0/* /mnt/.overlays/overlay-tmp/var")
     os.system("cp --reflink=auto -r /mnt/.boot/boot-0/* /mnt/.overlays/overlay-tmp/boot")
+    if GnomeInstall:
+        os.system("arch-chroot /mnt /usr/bin/ast deploy 1")
 
     print("You can reboot now :)")
 
