@@ -589,6 +589,7 @@ def prepare(overlay):
     os.system(f"cp -r --reflink=auto /.var/var-{overlay}/* /.overlays/overlay-chr/var/ >/dev/null 2>&1")
     os.system(f"cp -r --reflink=auto /.var/var-{overlay}/* /.var/var-chr/ >/dev/null 2>&1")
     os.system(f"btrfs sub snap /.boot/boot-{overlay} /.boot/boot-chr >/dev/null 2>&1")
+    os.system(f"rm -rf /.overlays/overlay-chr/etc >/dev/null 2>&1")
     os.system(f"btrfs sub snap /.etc/etc-chr/ /.overlays/overlay-chr/etc >/dev/null 2>&1")
     os.system(f"btrfs sub snap /.boot/boot-chr/ /.overlays/overlay-chr/boot >/dev/null 2>&1")
     os.system("mount --bind /.overlays/overlay-chr /.overlays/overlay-chr >/dev/null 2>&1") # Pacman gets weird when chroot directory is not a mountpoint, so this unusual mount is necessary
@@ -598,7 +599,7 @@ def posttrans(overlay):
     etc = overlay
     os.system("umount /.overlays/overlay-chr >/dev/null 2>&1")
     os.system(f"btrfs sub del /.overlays/overlay-{overlay} >/dev/null 2>&1")
-    os.system(f"btrfs sub del /.etc/etc-chr")
+    os.system(f"btrfs sub del /.etc/etc-chr >/dev/null 2>&1")
     os.system(f"btrfs sub snap /.overlays/overlay-chr/etc/ /.etc/etc-chr >/dev/null 2>&1")
     os.system(f"btrfs sub del /.var/var-chr >/dev/null 2>&1")
     os.system(f"btrfs sub create /.var/var-chr >/dev/null 2>&1")
@@ -607,7 +608,7 @@ def posttrans(overlay):
     os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/var/lib/systemd/* /.var/var-chr/lib/systemd >/dev/null 2>&1")
     os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/var/lib/pacman/* /.var/var-chr/lib/pacman >/dev/null 2>&1")
     os.system(f"cp -r -n --reflink=auto /.overlays/overlay-chr/var/cache/pacman/pkg/* /var/cache/pacman/pkg/ >/dev/null 2>&1")
-    os.system(f"btrfs sub del /.boot/boot-chr")
+    os.system(f"btrfs sub del /.boot/boot-chr >/dev/null 2>&1")
     os.system(f"btrfs sub snap /.overlays/overlay-chr/boot/ /.boot/boot-chr >/dev/null 2>&1")
     os.system(f"btrfs sub del /.etc/etc-{etc} >/dev/null 2>&1")
     os.system(f"btrfs sub del /.var/var-{etc} >/dev/null 2>&1")
