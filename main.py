@@ -12,6 +12,7 @@ def clear():
 def main(args):
     while True:
         clear()
+        print("Welcome to the astOS installer!\n\n\n\n\n")
         print("Select installation profile:\n1. Minimal install - suitable for embedded devices or servers\n2. Desktop install - suitable for workstations")
         InstallProfile = str(input("> "))
         if InstallProfile == "1":
@@ -22,7 +23,6 @@ def main(args):
             break
     os.system("pacman --noconfirm -Sy")
     confirm = "n"
-    os.system("lsblk")
     os.system(f"mkfs.btrfs -f {args[1]}")
     if os.path.exists("/sys/firmware/efi"):
         efi = True
@@ -71,6 +71,7 @@ def main(args):
     os.system(f"echo 'DISTRIB_ID=\"astOS\"' > /mnt/etc/lsb-release")
     os.system(f"echo 'DISTRIB_RELEASE=\"rolling\"' >> /mnt/etc/lsb-release")
     os.system(f"echo 'DISTRIB_DESCRIPTION=astOS' >> /mnt/etc/lsb-release")
+    clear()
 
     while True:
         print("Select a timezone (type list to list):")
@@ -85,6 +86,7 @@ def main(args):
     os.system(f"arch-chroot /mnt locale-gen")
     os.system(f"arch-chroot /mnt hwclock --systohc")
     os.system(f"echo 'LANG=en_US.UTF-8' > /mnt/etc/locale.conf")
+    clear()
     print("Enter hostname:")
     hostname = input("> ")
     os.system(f"echo {hostname} > /mnt/etc/hostname")
@@ -95,6 +97,7 @@ def main(args):
     os.system("sed -i '0,/@boot/{s,@boot,@.boot/boot-tmp,}' /mnt/etc/fstab")
     os.system("mkdir -p /mnt/root/images")
     os.system("arch-chroot /mnt btrfs sub set-default /.overlays/overlay-tmp")
+    clear()
     os.system("arch-chroot /mnt passwd")
     while True:
         print("did your password set properly (y/n)?")
@@ -132,6 +135,7 @@ def main(args):
         os.system(f"echo '1' > /mnt/etc/astpk.d/astpk-coverlay")
         os.system(f"echo '1' > /mnt/etc/astpk.d/astpk-cetc")
         os.system("pacstrap /mnt flatpak gnome gnome-extra gnome-themes-extra gdm pipewire pipewire-pulse podman sudo")
+        clear()
         print("Enter username (all lowercase, max 8 letters)")
         username = input("> ")
         os.system(f"arch-chroot /mnt useradd {username}")
@@ -143,7 +147,6 @@ def main(args):
                 break
             else:
                 os.system(f"arch-chroot /mnt passwd {username}")
-                os.system("arch-chroot /mnt passwd")
         os.system(f"arch-chroot /mnt usermod -aG audio,input,video,wheel {username}")
         os.system(f"arch-chroot /mnt passwd -l root")
         os.system(f"chmod +w /mnt/etc/sudoers")
@@ -197,6 +200,8 @@ def main(args):
         os.system("cp --reflink=auto -r /mnt/.var/var-0/* /mnt/.overlays/overlay-tmp/var")
         os.system("cp --reflink=auto -r /mnt/.boot/boot-0/* /mnt/.overlays/overlay-tmp/boot")
 
+    clear()
+    print("Installation complete")
     print("You can reboot now :)")
 
 main(args)
