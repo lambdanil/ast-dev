@@ -138,6 +138,14 @@ def main(args):
         clear()
         print("Enter username (all lowercase, max 8 letters)")
         username = input("> ")
+        while True:
+            print("did your set username properly (y/n)?")
+            reply = input("> ")
+            if reply.casefold() == "y":
+                break
+            else:
+                print("Enter username (all lowercase, max 8 letters)")
+                username = input("> ")
         os.system(f"arch-chroot /mnt useradd {username}")
         os.system(f"arch-chroot /mnt passwd {username}")
         while True:
