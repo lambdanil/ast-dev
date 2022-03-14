@@ -6,9 +6,21 @@ import sys
 args = list(sys.argv)
 # startup-service; startup; astpk-part; astpk-cbase; astpk-coverlay; astpk-cetc; astpk-firstboot
 
+def clear():
+    os.system("clear")
+
 def main(args):
-    os.system("pacman -Sy")
-    os.system("pacman -S vim")
+    while True:
+        clear()
+        print("Select installation profile:\n1. Minimal install - suitable for embedded devices or servers\n2. Desktop install - suitable for workstations")
+        InstallProfile = str(input("> "))
+        if InstallProfile == "1":
+            DesktopInstall = 0
+            break
+        if InstallProfile == "2":
+            DesktopInstall = 1
+            break
+    os.system("pacman --noconfirm -Sy")
     confirm = "n"
     os.system("lsblk")
     os.system(f"mkfs.btrfs -f {args[1]}")
@@ -60,6 +72,19 @@ def main(args):
     os.system(f"echo 'DISTRIB_RELEASE=\"rolling\"' >> /mnt/etc/lsb-release")
     os.system(f"echo 'DISTRIB_DESCRIPTION=astOS' >> /mnt/etc/lsb-release")
 
+    while True:
+        print("Select a timezone (type list to list):")
+        zone = input("> ")
+        if zone == "list":
+            os.system("ls /usr/share/zoneinfo | less")
+        else:
+            timezone = str(f"/usr/share/zoneinfo/{zone}")
+            break
+    os.system(f"arch-chroot /mnt ln -sf {timezone} /etc/localtime")
+    os.system("echo 'en_US UTF-8' >> /mnt/etc/locale.gen")
+    os.system(f"arch-chroot /mnt locale-gen")
+    os.system(f"arch-chroot /mnt hwclock --systohc")
+    os.system(f"echo 'LANG=en_US.UTF-8' > /mnt/etc/locale.conf")
     print("Enter hostname:")
     hostname = input("> ")
     os.system(f"echo {hostname} > /mnt/etc/hostname")
@@ -101,7 +126,50 @@ def main(args):
     os.system("btrfs sub snap -r /mnt/.var/var-tmp /mnt/.var/var-0")
     os.system("btrfs sub snap -r /mnt/.boot/boot-tmp /mnt/.boot/boot-0")
     os.system("btrfs sub snap -r /mnt/.etc/etc-tmp /mnt/.etc/etc-0")
-    os.system("btrfs sub snap /mnt/.overlays/overlay-0 /mnt/.overlays/overlay-tmp")
+    if DesktopInstall:
+        os.system("pacstrap /mnt flatpak gnome gnome-extra gnome-themes-extra gdm pipewire pipewire-pulse podman sudo")
+        print("Enter username (all lowercase, max 8 letters)")
+        username = input("> ")
+        os.system(f"arch-chroot /mnt useradd {username}")
+        os.system(f"arch-chroot /mnt passwd {username}")
+        while True:
+            print("did your password set properly (y/n)?")
+            reply = input("> ")
+            os.system(f"arch-chroot /mnt passwd {username}")
+            if reply.casefold() == "y":
+                break
+            else:
+                os.system("arch-chroot /mnt passwd")
+        os.system(f"arch-chroot /mnt usermod -aG audio,input,video,wheel {username}")
+        os.system(f"arch-chroot /mnt passwd -l root")
+        os.system(f"chmod +w /mnt/etc/sudoers")
+        os.system(f"echo '%wheel ALL=(ALL:ALL) ALL' >> /mnt/etc/sudoers")
+        os.system(f"chmod -w /mnt/etc/sudoers")
+        os.system(f"arch-chroot /mnt mkdir /home/{username}")
+        os.system(f"arch-chroot /mnt chown -R {username} /home/{username}")
+        os.system(f"arch-chroot /mnt systemctl enable gdm")
+
+        os.system("btrfs sub snap -r /mnt /mnt/.overlays/overlay-1")
+        os.system("btrfs sub del /mnt/.etc/etc-tmp")
+        os.system("btrfs sub del /mnt/.var/var-tmp")
+        os.system("btrfs sub del /mnt/.boot/boot-tmp")
+        os.system("btrfs sub create /mnt/.etc/etc-tmp")
+        os.system("btrfs sub create /mnt/.var/var-tmp")
+        os.system("btrfs sub create /mnt/.boot/boot-tmp")
+        #    os.system("cp --reflink=auto -r /mnt/var/* /mnt/.var/var-tmp")
+        os.system("mkdir -p /mnt/.var/var-tmp/lib/pacman")
+        os.system("mkdir -p /mnt/.var/var-tmp/lib/systemd")
+        os.system("cp --reflink=auto -r /mnt/var/lib/pacman/* /mnt/.var/var-tmp/lib/pacman/")
+        os.system("cp --reflink=auto -r /mnt/var/lib/systemd/* /mnt/.var/var-tmp/lib/systemd/")
+        os.system("cp --reflink=auto -r /mnt/boot/* /mnt/.boot/boot-tmp")
+        os.system("cp --reflink=auto -r /mnt/etc/* /mnt/.etc/etc-tmp")
+        os.system("btrfs sub snap -r /mnt/.var/var-tmp /mnt/.var/var-1")
+        os.system("btrfs sub snap -r /mnt/.boot/boot-tmp /mnt/.boot/boot-1")
+        os.system("btrfs sub snap -r /mnt/.etc/etc-tmp /mnt/.etc/etc-1")
+        os.system("btrfs sub snap /mnt/.overlays/overlay-1 /mnt/.overlays/overlay-tmp")
+    else:
+        os.system("btrfs sub snap /mnt/.overlays/overlay-0 /mnt/.overlays/overlay-tmp")
+
 #    os.system("umount /mnt/var")
     os.system("umount /mnt/boot")
     if efi:
@@ -116,10 +184,14 @@ def main(args):
     os.system("mkdir /mnt/.etc/etc-tmp")
     os.system(f"mount {args[1]} -o subvol=@etc,compress=zstd,noatime /mnt/.etc/etc-tmp")
     os.system("cp --reflink=auto -r /mnt/.etc/etc-tmp/* /mnt/etc")
-
-    os.system("cp --reflink=auto -r /mnt/.etc/etc-0/* /mnt/.overlays/overlay-tmp/etc")
-    os.system("cp --reflink=auto -r /mnt/.var/var-0/* /mnt/.overlays/overlay-tmp/var")
-    os.system("cp --reflink=auto -r /mnt/.boot/boot-0/* /mnt/.overlays/overlay-tmp/boot")
+    if DesktopInstall:
+        os.system("cp --reflink=auto -r /mnt/.etc/etc-1/* /mnt/.overlays/overlay-tmp/etc")
+        os.system("cp --reflink=auto -r /mnt/.var/var-1/* /mnt/.overlays/overlay-tmp/var")
+        os.system("cp --reflink=auto -r /mnt/.boot/boot-1/* /mnt/.overlays/overlay-tmp/boot")
+    else:
+        os.system("cp --reflink=auto -r /mnt/.etc/etc-0/* /mnt/.overlays/overlay-tmp/etc")
+        os.system("cp --reflink=auto -r /mnt/.var/var-0/* /mnt/.overlays/overlay-tmp/var")
+        os.system("cp --reflink=auto -r /mnt/.boot/boot-0/* /mnt/.overlays/overlay-tmp/boot")
 
     print("You can reboot now :)")
 
