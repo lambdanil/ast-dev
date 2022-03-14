@@ -129,6 +129,8 @@ def main(args):
     os.system("btrfs sub snap -r /mnt/.boot/boot-tmp /mnt/.boot/boot-0")
     os.system("btrfs sub snap -r /mnt/.etc/etc-tmp /mnt/.etc/etc-0")
     if DesktopInstall:
+        os.system(f"echo '1' > /mnt/etc/astpk.d/astpk-coverlay")
+        os.system(f"echo '1' > /mnt/etc/astpk.d/astpk-cetc")
         os.system("pacstrap /mnt flatpak gnome gnome-extra gnome-themes-extra gdm pipewire pipewire-pulse podman sudo")
         print("Enter username (all lowercase, max 8 letters)")
         username = input("> ")
