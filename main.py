@@ -108,7 +108,7 @@ def main(args):
             break
         else:
             os.system("arch-chroot /mnt passwd")
-    os.system("arch-chroot /mnt systemctl enable dhcpcd")
+    os.system("arch-chroot /mnt systemctl enable NetworkManager")
     os.system("mkdir -p /mnt/var/astpk/")
     os.system("echo {\\'name\\': \\'root\\', \\'children\\': [{\\'name\\': \\'0\\'}]} > /mnt/var/astpk/fstree")
     if DesktopInstall:
@@ -136,7 +136,7 @@ def main(args):
     if DesktopInstall:
         os.system(f"echo '1' > /mnt/etc/astpk.d/astpk-coverlay")
         os.system(f"echo '1' > /mnt/etc/astpk.d/astpk-cetc")
-        os.system("pacstrap /mnt flatpak gnome gnome-extra gnome-themes-extra gdm pipewire pipewire-pulse podman sudo")
+        os.system("pacstrap /mnt flatpak gnome gnome-extra gnome-themes-extra gdm pipewire pipewire-pulse podman sudo xorg-drivers tlp")
         clear()
         print("Enter username (all lowercase, max 8 letters)")
         username = input("> ")
@@ -165,6 +165,8 @@ def main(args):
         os.system(f"arch-chroot /mnt mkdir /home/{username}")
         os.system(f"arch-chroot /mnt chown -R {username} /home/{username}")
         os.system(f"arch-chroot /mnt systemctl enable gdm")
+        os.system(f"arch-chroot /mnt su {username} -c systemctl enable --user pipwire")
+        os.system(f"arch-chroot /mnt su {username} -c systemctl enable --user pipwire-pulse")
 
         os.system("btrfs sub snap -r /mnt /mnt/.overlays/overlay-1")
         os.system("btrfs sub del /mnt/.etc/etc-tmp")
