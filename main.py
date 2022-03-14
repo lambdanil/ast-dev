@@ -106,6 +106,8 @@ def main(args):
     os.system("arch-chroot /mnt systemctl enable dhcpcd")
     os.system("mkdir -p /mnt/var/astpk/")
     os.system("echo {\\'name\\': \\'root\\', \\'children\\': [{\\'name\\': \\'0\\'}]} > /mnt/var/astpk/fstree")
+    if DesktopInstall:
+        os.system("echo {\\'name\\': \\'root\\', \\'children\\': [{\\'name\\': \\'0\\'},{\\'name\\': \\'1\\'}]} > /mnt/var/astpk/fstree")
     os.system(f"arch-chroot /mnt sed -i s,Arch,astOS,g /etc/default/grub")
     os.system(f"arch-chroot /mnt grub-install {args[2]}")
     os.system(f"arch-chroot /mnt grub-mkconfig {args[2]} -o /boot/grub/grub.cfg")
@@ -135,10 +137,10 @@ def main(args):
         while True:
             print("did your password set properly (y/n)?")
             reply = input("> ")
-            os.system(f"arch-chroot /mnt passwd {username}")
             if reply.casefold() == "y":
                 break
             else:
+                os.system(f"arch-chroot /mnt passwd {username}")
                 os.system("arch-chroot /mnt passwd")
         os.system(f"arch-chroot /mnt usermod -aG audio,input,video,wheel {username}")
         os.system(f"arch-chroot /mnt passwd -l root")
