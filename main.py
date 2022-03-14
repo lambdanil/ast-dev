@@ -82,7 +82,8 @@ def main(args):
             timezone = str(f"/usr/share/zoneinfo/{zone}")
             break
     os.system(f"arch-chroot /mnt ln -sf {timezone} /etc/localtime")
-    os.system("echo 'en_US UTF-8' >> /mnt/etc/locale.gen")
+    os.system("sed -i s/'^#'// /mnt/etc/locale.gen")
+    os.system("sed -i s/'^ '/'#'/ /mnt/etc/locale.gen")
     os.system(f"arch-chroot /mnt locale-gen")
     os.system(f"arch-chroot /mnt hwclock --systohc")
     os.system(f"echo 'LANG=en_US.UTF-8' > /mnt/etc/locale.conf")
