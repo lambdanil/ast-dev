@@ -561,8 +561,6 @@ def prepare(overlay):
     os.system(f"mkdir /.var/var-chr")
     os.system("mount --bind /.overlays/overlay-chr /.overlays/overlay-chr >/dev/null 2>&1") # Pacman gets weird when chroot directory is not a mountpoint, so this unusual mount is necessary
     os.system(f"mount --bind /var /.overlays/overlay-chr/var")
-    os.system("rm -rf /.overlays/overlay-chr/var >/dev/null 2>&1")
-    os.system("mkdir /.overlays/overlay-chr/var")
     #os.system(f"chmod 0755 /.overlays/overlay-chr/var >/dev/null 2>&1") # For some reason the permission needs to be set here
     os.system(f"btrfs sub snap /.boot/boot-{overlay} /.boot/boot-chr >/dev/null 2>&1")
     os.system(f"cp -r --reflink=auto /.etc/etc-chr/* /.overlays/overlay-chr/etc >/dev/null 2>&1")
