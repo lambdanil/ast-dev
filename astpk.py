@@ -576,6 +576,7 @@ def prepare(overlay):
 # Post transaction function, copy from chroot dirs back to read only image dir
 def posttrans(overlay):
     etc = overlay
+    tmp = get_tmp()
     os.system("umount /.overlays/overlay-chr >/dev/null 2>&1")
     os.system(f"umount /.overlays/overlay-chr/home")
     os.system(f"btrfs sub del /.overlays/overlay-{overlay} >/dev/null 2>&1")
@@ -599,6 +600,10 @@ def posttrans(overlay):
     os.system(f"mkdir -p /.var/var-{etc}/lib/pacman >/dev/null 2>&1")
     os.system(f"cp --reflink=auto -r /.var/var-chr/lib/systemd/* /.var/var-{etc}/lib/systemd >/dev/null 2>&1")
     os.system(f"cp --reflink=auto -r /.var/var-chr/lib/pacman/* /.var/var-{etc}/lib/pacman >/dev/null 2>&1")
+    os.system(f"rm -rf /var/lib/pacman/* >/dev/null 2>&1")
+    os.system(f"cp --reflink=auto -r /.overlays/overlay-{tmp}/lib/pacman/* /var/lib/pacman >/dev/null 2>&1")
+    os.system(f"rm -rf /var/lib/systemd/* >/dev/null 2>&1")
+    os.system(f"cp --reflink=auto -r /.overlays/overlay-{tmp}/lib/systemd/* /var/lib/pacman >/dev/null 2>&1")
     #os.system(f"cp --reflink=auto -r -n /.overlays/overlay-chr/var/lib/* /var/lib/ >/dev/null 2>&1")
     #os.system(f"cp --reflink=auto -r -n /.overlays/overlay-chr/var/games/* /var/games/ >/dev/null 2>&1")
     os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{overlay} >/dev/null 2>&1")
