@@ -603,7 +603,7 @@ def posttrans(overlay):
     os.system(f"rm -rf /var/lib/pacman/* >/dev/null 2>&1")
     os.system(f"cp --reflink=auto -r /.overlays/overlay-{tmp}/lib/pacman/* /var/lib/pacman >/dev/null 2>&1")
     os.system(f"rm -rf /var/lib/systemd/* >/dev/null 2>&1")
-    os.system(f"cp --reflink=auto -r /.overlays/overlay-{tmp}/lib/systemd/* /var/lib/pacman >/dev/null 2>&1")
+    os.system(f"cp --reflink=auto -r /.overlays/overlay-{tmp}/lib/systemd/* /var/lib/systemd >/dev/null 2>&1")
     #os.system(f"cp --reflink=auto -r -n /.overlays/overlay-chr/var/lib/* /var/lib/ >/dev/null 2>&1")
     #os.system(f"cp --reflink=auto -r -n /.overlays/overlay-chr/var/games/* /var/games/ >/dev/null 2>&1")
     os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{overlay} >/dev/null 2>&1")
