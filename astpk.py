@@ -561,6 +561,7 @@ def prepare(overlay):
     os.system(f"mkdir /.var/var-chr")
     os.system(f"mount --bind /var /.var/var-chr")
     os.system("rm -rf /.overlays/overlay-chr/var >/dev/null 2>&1")
+    os.system("mkdir /.overlays/overlay-chr/var")
     os.system(f"mount --bind /var /.overlays/overlay-chr/var")
     #os.system(f"chmod 0755 /.overlays/overlay-chr/var >/dev/null 2>&1") # For some reason the permission needs to be set here
     os.system(f"rm -rf /.overlays/overlay-chr/var/lib/pacman >/dev/null 2>&1")
