@@ -458,7 +458,7 @@ def live_install(pkg):
     tmp = get_tmp()
     part = get_part()
     #os.system(f"chattr -RV -i /.overlays/overlay-{tmp}/usr > /dev/null 2>&1")
-    os.system(f"mount --bind /.overlays/overlay-{tmp} /.overlays/overlay-{tmp}")
+    os.system(f"mount --bind /.overlays/overlay-{tmp} /.overlays/overlay-{tmp} > /dev/null 2>&")
     os.system(f"mount --bind /home /.overlays/overlay-{tmp}/home > /dev/null 2>&1")
     os.system(f"mount --bind /var /.overlays/overlay-{tmp}/var > /dev/null 2>&1")
     os.system(f"mount --bind /etc /.overlays/overlay-{tmp}/etc > /dev/null 2>&1")
@@ -473,7 +473,7 @@ def live_unlock():
     tmp = get_tmp()
     part = get_part()
     #os.system(f"chattr -RV -i /.overlays/overlay-{tmp}/usr > /dev/null 2>&1")
-    os.system(f"mount --bind /.overlays/overlay-{tmp} /.overlays/overlay-{tmp}")
+    os.system(f"mount --bind /.overlays/overlay-{tmp} /.overlays/overlay-{tmp} > /dev/null 2>&")
     os.system(f"mount --bind /home /.overlays/overlay-{tmp}/home > /dev/null 2>&1")
     os.system(f"mount --bind /var /.overlays/overlay-{tmp}/var > /dev/null 2>&1")
     os.system(f"mount --bind /etc /.overlays/overlay-{tmp}/etc > /dev/null 2>&1")
@@ -564,7 +564,7 @@ def prepare(overlay):
     etc = overlay
     os.system(f"btrfs sub snap /.overlays/overlay-{overlay} /.overlays/overlay-chr >/dev/null 2>&1")
     os.system(f"btrfs sub snap /.etc/etc-{overlay} /.etc/etc-chr >/dev/null 2>&1")
-    os.system(f"mkdir /.var/var-chr >/dev/null 2>&1")
+    os.system(f"mkdir -p /.var/var-chr >/dev/null 2>&1")
     os.system("mount --bind /.overlays/overlay-chr /.overlays/overlay-chr >/dev/null 2>&1") # Pacman gets weird when chroot directory is not a mountpoint, so this unusual mount is necessary
     os.system(f"mount --bind /var /.overlays/overlay-chr/var >/dev/null 2>&1")
     #os.system(f"chmod 0755 /.overlays/overlay-chr/var >/dev/null 2>&1") # For some reason the permission needs to be set here
