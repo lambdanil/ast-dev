@@ -50,7 +50,7 @@ It doesn't use it's own package format or package manager, instead relying on [p
 
 ---
 ## astOS compared to other similar distributions
-* **NixOS** - compared to nixOS, astOS is a more traditional system with how it's setup and maintained. While nixOS is entirely configured using the Nix programming language, astOS uses Arch's pacman package manager. astOS uses btrfs snapshots while NixOS builds squashfs system images.
+* **NixOS** - compared to nixOS, astOS is a more traditional system with how it's setup and maintained. While nixOS is entirely configured using the Nix programming language, astOS uses Arch's pacman package manager. astOS uses btrfs snapshots.
   * astOS allows declarative configuration using Ansible, for similar functionality to NixOS
 * **Fedora Silverblue** - astOS is more customizable, but does require more manual setup.
 * **OpenSUSE MicroOS** - astOS is a more customizable system, but once again requires a bit more manual setup. MicroOS works similarly to astOS in the way it utilizes btrfs snapshots.
@@ -150,6 +150,14 @@ ast del <tree>
 ast chroot <snapshot>
 ```
 
+* You can enter an unlocked shell inside the current booted snapshot with
+
+```
+ast live-chroot
+```
+
+* The changes made to live session are not saved on new deployments 
+
 #### Other chroot options
 
 * Runs a specified command inside snapshot
@@ -201,6 +209,7 @@ ast new
 ```
 ast deploy <snapshot>  
 ```
+
 #### Update base which new snapshots are built from
 
 ```
@@ -211,7 +220,7 @@ ast base-update
 ## Package management
 
 #### Software installation
-* Run ```ast deploy <snapshot>``` and reboot after installing new software for changes to apply
+* Run ```ast deploy <snapshot>``` and reboot after installing new software for changes to apply (unless using live install, more info below)
 * Software can also be installed using pacman in a chroot
 * AUR can be used under the chroot
 * Flatpak can be used for persistent package installation
@@ -224,6 +233,11 @@ ast install <snapshot> <package>
 
 ```
 ast sync <tree>
+```
+
+* ast also supports installing packages without rebooting
+```
+ast install --live <snapshot> <package>
 ```
 
 #### Removing software
@@ -257,6 +271,14 @@ ast tree-upgrade <tree>
 ```
 
 * This can be configured in a script (ie. a crontab script) for easy and safe automatic updates
+
+* If the system becomes unbootable after an update, you can boot last working deployment (select in grub menu) and then perform a rollback
+
+```
+ast rollback
+```
+
+* Then you can reboot back to a working system
 
 
 ## Known bugs
