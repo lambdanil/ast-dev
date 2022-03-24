@@ -161,24 +161,26 @@ def get_tmp():
 # Rebuild image
 def rebuild(overlay):
     prepare(overlay)
-    os.system("arch-chroot /.overlays/overlay-chr 'pacman -Qq > /var/astpk/pkglist'")
+    os.system("echo 'pacman -Qq > /var/astpk/pkglist' > /var/astpk/genpkgs")
+    os.system("arch-chroot /.overlays/overlay-chr bash /var/astpk/genpkgs")
+    os.system("echo 'installable_packages=$(comm -12 <(pacman -Slq | sort) <(sort /var/astpk/pkglist)) && pacman -S --noconfirm --needed $installable_packages' > /var/astpk/pkgs")
     force_delete(overlay)
     os.system(f"btrfs sub snap -r /.overlays/overlay-0 /.overlays/overlay-{overlay}")
     os.system(f"btrfs sub snap -r /.var/var-0 /.var/var-{overlay}")
     os.system(f"btrfs sub snap -r /.boot/boot-0 /.boot/boot-{overlay}")  # /etc is not changed, work on merging later
     prepare(overlay)
-    os.system("arch-chroot /.overlays/overlay-chr 'installable_packages=$(comm -12 <(pacman -Slq | sort) <(sort /var/astpk/pkglist)) && pacman -S --noconfirm --needed $installable_packages'")
+    os.system("arch-chroot /.overlays/overlay-chr bash /var/astpk/pkgs")
     children = recurstree(fstree, overlay)
     for child in children:
         parent = get_parent(fstree, child)
         prepare(child)
-        os.system("arch-chroot /.overlays/overlay-chr 'pacman -Qq > /var/astpk/pkglist'")
+        os.system("arch-chroot /.overlays/overlay-chr bash /var/astpk/genpkgs")
         force_delete(child)
         os.system(f"btrfs sub snap -r /.overlays/overlay-{parent} /.overlays/overlay-{child}")
         os.system(f"btrfs sub snap -r /.var/var-{parent} /.var/var-{child}")
         os.system(f"btrfs sub snap -r /.boot/boot-{parent} /.boot/boot-{child}") # /etc is not changed, work on merging later
         prepare(child)
-        os.system("arch-chroot /.overlays/overlay-chr 'installable_packages=$(comm -12 <(pacman -Slq | sort) <(sort /var/astpk/pkglist)) && pacman -S --noconfirm --needed $installable_packages'")
+        os.system("arch-chroot /.overlays/overlay-chr bash /var/astpk/pkgs")
         posttrans(overlay)
 
 # Deploy image
