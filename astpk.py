@@ -158,40 +158,28 @@ def get_tmp():
     else:
         return("tmp")
 
-# Reverse tmp deploy image
-def rdeploy(overlay):
-    tmp = get_tmp()
-    if "tmp0" in tmp:
-        tmp = "tmp"
-    else:
-        tmp = "tmp0"
-    untmp()
-    etc = overlay
-    os.system(f"btrfs sub snap /.overlays/overlay-{overlay} /.overlays/overlay-{tmp} >/dev/null 2>&1")
-    os.system(f"btrfs sub snap /.etc/etc-{overlay} /.etc/etc-{tmp} >/dev/null 2>&1")
-    os.system(f"btrfs sub create /.var/var-{tmp} >/dev/null 2>&1")
-    os.system(f"cp --reflink=auto -r /.var/var-{etc}/* /.var/var-{tmp} >/dev/null 2>&1")
-    os.system(f"btrfs sub snap /.boot/boot-{overlay} /.boot/boot-{tmp} >/dev/null 2>&1")
-    os.system(f"mkdir /.overlays/overlay-{tmp}/etc >/dev/null 2>&1")
-    os.system(f"rm -rf /.overlays/overlay-{tmp}/var >/dev/null 2>&1")
-    os.system(f"mkdir /.overlays/overlay-{tmp}/boot >/dev/null 2>&1")
-    os.system(f"cp --reflink=auto -r /.etc/etc-{etc}/* /.overlays/overlay-{tmp}/etc >/dev/null 2>&1")
-    os.system(f"btrfs sub snap /var /.overlays/overlay-{tmp}/var >/dev/null 2>&1")
-    os.system(f"cp --reflink=auto -r /.boot/boot-{etc}/* /.overlays/overlay-{tmp}/boot >/dev/null 2>&1")
-    os.system(f"echo '{overlay}' > /.overlays/overlay-{tmp}/etc/astpk.d/astpk-coverlay")
-    os.system(f"echo '{etc}' > /.overlays/overlay-{tmp}/etc/astpk.d/astpk-cetc")
-    os.system(f"echo '{overlay}' > /.etc/etc-{tmp}/astpk.d/astpk-coverlay")
-    os.system(f"echo '{etc}' > /.etc/etc-{tmp}/astpk.d/astpk-cetc")
-    rswitchtmp()
-    os.system(f"rm -rf /var/lib/pacman/* >/dev/null 2>&1") # Clean pacman and systemd directories before copy
-    os.system(f"rm -rf /var/lib/systemd/* >/dev/null 2>&1")
-    os.system(f"cp --reflink=auto -r /.var/var-{etc}/* /.overlays/overlay-{tmp}/var/ >/dev/null 2>&1")
-    os.system(f"cp --reflink=auto -r /.var/var-{etc}/lib/pacman/* /var/lib/pacman/ >/dev/null 2>&1") # Copy pacman and systemd directories
-    os.system(f"cp --reflink=auto -r /.var/var-{etc}/lib/systemd/* /var/lib/systemd/ >/dev/null 2>&1")
-    os.system(f"btrfs sub set-default /.overlays/overlay-{tmp} >/dev/null 2>&1")  # Set default volume
-    print(f"/ was rolled back to {overlay}")
-
-
+# Rebuild image
+def rebuild(overlay):
+    prepare(overlay)
+    os.system("arch-chroot /.overlays/overlay-chr 'pacman -Qq > /var/astpk/pkglist'")
+    force_delete(overlay)
+    os.system(f"btrfs sub snap -r /.overlays/overlay-0 /.overlays/overlay-{overlay}")
+    os.system(f"btrfs sub snap -r /.var/var-0 /.var/var-{overlay}")
+    os.system(f"btrfs sub snap -r /.boot/boot-0 /.boot/boot-{overlay}")  # /etc is not changed, work on merging later
+    prepare(overlay)
+    os.system("arch-chroot /.overlays/overlay-chr 'installable_packages=$(comm -12 <(pacman -Slq | sort) <(sort /var/astpk/pkglist)) && pacman -S --noconfirm --needed $installable_packages'")
+    children = recurstree(fstree, overlay)
+    for child in children:
+        parent = get_parent(fstree, child)
+        prepare(child)
+        os.system("arch-chroot /.overlays/overlay-chr 'pacman -Qq > /var/astpk/pkglist'")
+        force_delete(child)
+        os.system(f"btrfs sub snap -r /.overlays/overlay-{parent} /.overlays/overlay-{child}")
+        os.system(f"btrfs sub snap -r /.var/var-{parent} /.var/var-{child}")
+        os.system(f"btrfs sub snap -r /.boot/boot-{parent} /.boot/boot-{child}") # /etc is not changed, work on merging later
+        prepare(child)
+        os.system("arch-chroot /.overlays/overlay-chr 'installable_packages=$(comm -12 <(pacman -Slq | sort) <(sort /var/astpk/pkglist)) && pacman -S --noconfirm --needed $installable_packages'")
+        posttrans(overlay)
 
 # Deploy image
 def deploy(overlay):
@@ -225,11 +213,15 @@ def deploy(overlay):
         switchtmp()
         os.system(f"rm -rf /var/lib/pacman/* >/dev/null 2>&1") # Clean pacman and systemd directories before copy
         os.system(f"rm -rf /var/lib/systemd/* >/dev/null 2>&1")
+        os.system(f"rm -rf /.overlays/overlay-{tmp}/var/lib/systemd/* >/dev/null 2>&1")
+        os.system(f"rm -rf /.overlays/overlay-{tmp}/var/lib/pacman/* >/dev/null 2>&1")
         os.system(f"cp --reflink=auto -r /.var/var-{etc}/* /.overlays/overlay-{tmp}/var/ >/dev/null 2>&1")
         os.system(f"cp --reflink=auto -r /.var/var-{etc}/lib/pacman/* /var/lib/pacman/ >/dev/null 2>&1") # Copy pacman and systemd directories
         os.system(f"cp --reflink=auto -r /.var/var-{etc}/lib/systemd/* /var/lib/systemd/ >/dev/null 2>&1")
+        os.system(f"cp --reflink=auto -r /.var/var-{etc}/lib/pacman/* /.overlays/overlay-{tmp}/var/lib/pacman/")
+        os.system(f"cp --reflink=auto -r /.var/var-{etc}/lib/systemd/* /.overlays/overlay-{tmp}/var/lib/systemd/ >/dev/null 2>&1")
         os.system(f"btrfs sub set-default /.overlays/overlay-{tmp}") # Set default volume
-        print(tmp)
+        #os.system(f"chattr -RV +i /.overlays/overlay-{tmp}/usr > /dev/null 2>&1")
         print(f"{overlay} was deployed to /")
 
 # Add node to branch
@@ -440,22 +432,6 @@ def update_boot(overlay):
         os.system(f"arch-chroot /.overlays/overlay-chr sed -i s,overlay-chr,overlay-{tmp},g /boot/grub/grub.cfg")
         posttrans(overlay)
 
-# Update boot
-def update_rboot(overlay):
-    if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
-        print("cannot update boot, overlay doesn't exist")
-    else:
-        tmp = get_tmp()
-        if "tmp0" in tmp:
-            tmp = "tmp"
-        else:
-            tmp = "tmp0"
-        part = get_part()
-        prepare(overlay)
-        os.system(f"arch-chroot /.overlays/overlay-chr grub-mkconfig {part} -o /boot/grub/grub.cfg")
-        os.system(f"arch-chroot /.overlays/overlay-chr sed -i s,overlay-chr,overlay-{tmp},g /boot/grub/grub.cfg")
-        posttrans(overlay)
-
 # Chroot into overlay
 def chroot(overlay):
     if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
@@ -499,6 +475,35 @@ def untmp():
     os.system(f"btrfs sub del /.var/var-{tmp} >/dev/null 2>&1")
     os.system(f"btrfs sub del /.boot/boot-{tmp} >/dev/null 2>&1")
 
+# Install live
+def live_install(pkg):
+    tmp = get_tmp()
+    part = get_part()
+    #os.system(f"chattr -RV -i /.overlays/overlay-{tmp}/usr > /dev/null 2>&1")
+    os.system(f"mount --bind /.overlays/overlay-{tmp} /.overlays/overlay-{tmp} > /dev/null 2>&1")
+    os.system(f"mount --bind /home /.overlays/overlay-{tmp}/home > /dev/null 2>&1")
+    os.system(f"mount --bind /var /.overlays/overlay-{tmp}/var > /dev/null 2>&1")
+    os.system(f"mount --bind /etc /.overlays/overlay-{tmp}/etc > /dev/null 2>&1")
+    os.system(f"mount --bind /tmp /.overlays/overlay-{tmp}/tmp > /dev/null 2>&1")
+    os.system(f"arch-chroot /.overlays/overlay-{tmp} pacman -S  --overwrite \\* --noconfirm {pkg}")
+    os.system(f"umount /.overlays/overlay-{tmp}/* > /dev/null 2>&1")
+    os.system(f"umount /.overlays/overlay-{tmp} > /dev/null 2>&1")
+    #os.system(f"chattr -RV +i /.overlays/overlay-{tmp}/usr > /dev/null 2>&1")
+
+# Live unlocked shell
+def live_unlock():
+    tmp = get_tmp()
+    part = get_part()
+    #os.system(f"chattr -RV -i /.overlays/overlay-{tmp}/usr > /dev/null 2>&1")
+    os.system(f"mount --bind /.overlays/overlay-{tmp} /.overlays/overlay-{tmp} > /dev/null 2>&1")
+    os.system(f"mount --bind /home /.overlays/overlay-{tmp}/home > /dev/null 2>&1")
+    os.system(f"mount --bind /var /.overlays/overlay-{tmp}/var > /dev/null 2>&1")
+    os.system(f"mount --bind /etc /.overlays/overlay-{tmp}/etc > /dev/null 2>&1")
+    os.system(f"mount --bind /tmp /.overlays/overlay-{tmp}/tmp > /dev/null 2>&1")
+    os.system(f"arch-chroot /.overlays/overlay-{tmp}")
+    os.system(f"umount /.overlays/overlay-{tmp}/* > /dev/null 2>&1")
+    os.system(f"umount /.overlays/overlay-{tmp} > /dev/null 2>&1")
+    #os.system(f"chattr -RV +i /.overlays/overlay-{tmp}/usr > /dev/null 2>&1")
 
 # Install packages
 def install(overlay,pkg):
@@ -532,6 +537,19 @@ def pac(overlay,arg):
         prepare(overlay)
         os.system(f"arch-chroot /.overlays/overlay-chr pacman {arg}")
         posttrans(overlay)
+
+# Delete without interaction
+def force_delete(overlay):
+    children = return_children(fstree, overlay)
+    os.system(f"btrfs sub del /.boot/boot-{overlay} >/dev/null 2>&1")
+    #os.system(f"btrfs sub del /.etc/etc-{overlay} >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.var/var-{overlay} >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.overlays/overlay-{overlay}")
+    #for child in children:  # This deletes the node itself along with it's children
+    #    os.system(f"btrfs sub del /.boot/boot-{child} >/dev/null 2>&1")
+    #    os.system(f"btrfs sub del /.etc/etc-{child} >/dev/null 2>&1")
+    #    os.system(f"btrfs sub del /.var/var-{child} >/dev/null 2>&1")
+    #    os.system(f"btrfs sub del /.overlays/overlay-{child} >/dev/null 2>&1")
 
 # Delete tree or branch
 def delete(overlay):
@@ -577,35 +595,40 @@ def get_efi():
 # Prepare overlay to chroot dir to install or chroot into
 def prepare(overlay):
     unchr()
+    part = get_part()
     etc = overlay
     os.system(f"btrfs sub snap /.overlays/overlay-{overlay} /.overlays/overlay-chr >/dev/null 2>&1")
     os.system(f"btrfs sub snap /.etc/etc-{overlay} /.etc/etc-chr >/dev/null 2>&1")
-    os.system(f"btrfs sub snap /var /.var/var-chr >/dev/null 2>&1")
-    os.system("rm -rf /.overlays/overlay-chr/var >/dev/null 2>&1")
-    os.system(f"btrfs sub snap /var /.overlays/overlay-chr/var >/dev/null 2>&1")
-    os.system(f"chmod 0755 /.overlays/overlay-chr/var >/dev/null 2>&1") # For some reason the permission needs to be set here
-    os.system(f"rm -rf /.overlays/overlay-chr/var/lib/pacman >/dev/null 2>&1")
-    os.system(f"rm -rf /.overlays/overlay-chr/var/lib/systemd >/dev/null 2>&1")
-    os.system(f"cp -r --reflink=auto /.var/var-{overlay}/* /.overlays/overlay-chr/var/ >/dev/null 2>&1")
-    os.system(f"cp -r --reflink=auto /.var/var-{overlay}/* /.var/var-chr/ >/dev/null 2>&1")
+    os.system(f"mkdir -p /.var/var-chr >/dev/null 2>&1")
+    os.system("mount --bind /.overlays/overlay-chr /.overlays/overlay-chr >/dev/null 2>&1") # Pacman gets weird when chroot directory is not a mountpoint, so this unusual mount is necessary
+    os.system(f"mount --bind /var /.overlays/overlay-chr/var >/dev/null 2>&1")
+    #os.system(f"chmod 0755 /.overlays/overlay-chr/var >/dev/null 2>&1") # For some reason the permission needs to be set here
     os.system(f"btrfs sub snap /.boot/boot-{overlay} /.boot/boot-chr >/dev/null 2>&1")
     os.system(f"cp -r --reflink=auto /.etc/etc-chr/* /.overlays/overlay-chr/etc >/dev/null 2>&1")
     os.system(f"cp -r --reflink=auto /.boot/boot-chr/* /.overlays/overlay-chr/boot >/dev/null 2>&1")
-    os.system("mount --bind /.overlays/overlay-chr /.overlays/overlay-chr >/dev/null 2>&1") # Pacman gets weird when chroot directory is not a mountpoint, so this unusual mount is necessary
+    os.system(f"rm -rf /.overlays/overlay-chr/var/lib/pacman/* >/dev/null 2>&1")
+    os.system(f"rm -rf /.overlays/overlay-chr/var/lib/systemd/* >/dev/null 2>&1")
+    os.system(f"cp -r --reflink=auto /.var/var-{overlay}/lib/pacman/* /.overlays/overlay-chr/var/lib/pacman/ >/dev/null 2>&1")
+    os.system(f"cp -r --reflink=auto /.var/var-{overlay}/lib/systemd/* /.overlays/overlay-chr/var/lib/systemd/ >/dev/null 2>&1")
+    os.system(f"mount {part} -o subvol=@home /.overlays/overlay-chr/home >/dev/null 2>&1")
+
 
 # Post transaction function, copy from chroot dirs back to read only image dir
 def posttrans(overlay):
     etc = overlay
+    tmp = get_tmp()
     os.system("umount /.overlays/overlay-chr >/dev/null 2>&1")
+    os.system(f"umount /.overlays/overlay-chr/home")
     os.system(f"btrfs sub del /.overlays/overlay-{overlay} >/dev/null 2>&1")
+    os.system(f"rm -rf /.etc/etc-chr/* >/dev/null 2>&1")
     os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/etc/* /.etc/etc-chr >/dev/null 2>&1")
-    os.system(f"btrfs sub del /.var/var-chr >/dev/null 2>&1")
-    os.system(f"btrfs sub create /.var/var-chr >/dev/null 2>&1")
+    os.system(f"rm -rf /.var/var-chr/* >/dev/null 2>&1")
     os.system(f"mkdir -p /.var/var-chr/lib/systemd >/dev/null 2>&1")
     os.system(f"mkdir -p /.var/var-chr/lib/pacman >/dev/null 2>&1")
     os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/var/lib/systemd/* /.var/var-chr/lib/systemd >/dev/null 2>&1")
     os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/var/lib/pacman/* /.var/var-chr/lib/pacman >/dev/null 2>&1")
     os.system(f"cp -r -n --reflink=auto /.overlays/overlay-chr/var/cache/pacman/pkg/* /var/cache/pacman/pkg/ >/dev/null 2>&1")
+    os.system(f"rm -rf /.boot/boot-chr/* >/dev/null 2>&1")
     os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/boot/* /.boot/boot-chr >/dev/null 2>&1")
     os.system(f"btrfs sub del /.etc/etc-{etc} >/dev/null 2>&1")
     os.system(f"btrfs sub del /.var/var-{etc} >/dev/null 2>&1")
@@ -616,6 +639,12 @@ def posttrans(overlay):
     os.system(f"mkdir -p /.var/var-{etc}/lib/pacman >/dev/null 2>&1")
     os.system(f"cp --reflink=auto -r /.var/var-chr/lib/systemd/* /.var/var-{etc}/lib/systemd >/dev/null 2>&1")
     os.system(f"cp --reflink=auto -r /.var/var-chr/lib/pacman/* /.var/var-{etc}/lib/pacman >/dev/null 2>&1")
+    os.system(f"rm -rf /var/lib/pacman/* >/dev/null 2>&1")
+    os.system(f"cp --reflink=auto -r /.overlays/overlay-{tmp}/var/lib/pacman/* /var/lib/pacman >/dev/null 2>&1")
+    os.system(f"rm -rf /var/lib/systemd/* >/dev/null 2>&1")
+    os.system(f"cp --reflink=auto -r /.overlays/overlay-{tmp}/var/lib/systemd/* /var/lib/systemd >/dev/null 2>&1")
+    #os.system(f"cp --reflink=auto -r -n /.overlays/overlay-chr/var/lib/* /var/lib/ >/dev/null 2>&1")
+    #os.system(f"cp --reflink=auto -r -n /.overlays/overlay-chr/var/games/* /var/games/ >/dev/null 2>&1")
     os.system(f"btrfs sub snap -r /.overlays/overlay-chr /.overlays/overlay-{overlay} >/dev/null 2>&1")
 #    os.system(f"btrfs sub snap -r /.var/var-chr /.var/var-{etc} >/dev/null 2>&1")
     os.system(f"btrfs sub snap -r /.boot/boot-chr /.boot/boot-{etc} >/dev/null 2>&1")
@@ -636,7 +665,7 @@ def upgrade(overlay):
 def autoupgrade(overlay):
     clone_as_tree(overlay)
     prepare(overlay)
-    excode = str(os.system(f"arch-chroot /.overlays/overlay-chr pacman -Syyu"))
+    excode = str(os.system(f"arch-chroot /.overlays/overlay-chr pacman --noconfirm -Syyu"))
     if excode != "127":
         posttrans(overlay)
         os.system("echo 0 > /var/astpk/upstate")
@@ -664,6 +693,13 @@ def chroot_check():
                 chroot = False
     return(chroot)
 
+# Rollback last booted deployment
+def rollback():
+    tmp = get_tmp()
+    i = findnew()
+    clone_as_tree(tmp)
+    write_desc(i, "rollback")
+    deploy(i)
 
 # Switch between /tmp deployments !!! Reboot after this function !!!
 def switchtmp():
@@ -694,21 +730,56 @@ def switchtmp():
         os.system("sed -i 's,@.etc/etc-tmp,@.etc/etc-tmp0,g' /.overlays/overlay-tmp0/etc/fstab")
 #        os.system("sed -i 's,@.var/var-tmp,@.var/var-tmp0,g' /.overlays/overlay-tmp0/etc/fstab")
         os.system("sed -i 's,@.boot/boot-tmp,@.boot/boot-tmp0,g' /.overlays/overlay-tmp0/etc/fstab")
-    os.system("umount /etc/mnt/boot >/dev/null 2>&1")
-#    os.system("reboot") # Enable for non-testing versions
-
-def rswitchtmp():
-    mount = get_tmp()
-    part = get_part()
-    os.system(f"mkdir /etc/mnt >/dev/null 2>&1")
-    os.system(f"mkdir /etc/mnt/boot >/dev/null 2>&1")
-    os.system(f"mount {part} -o subvol=@boot /etc/mnt/boot >/dev/null 2>&1") # Mount boot partition for writing
-    if "tmp0" in mount:
-        os.system("cp --reflink=auto -r /.overlays/overlay-tmp/boot/* /etc/mnt/boot >/dev/null 2>&1")
+    #
+    grubconf = open("/etc/mnt/boot/grub/grub.cfg","r")
+    line = grubconf.readline()
+    while "BEGIN /etc/grub.d/10_linux" not in line:
+        line = grubconf.readline()
+    line = grubconf.readline()
+    gconf = str("")
+    while "}" not in line:
+        gconf = str(gconf)+str(line)
+        line = grubconf.readline()
+    if "overlay-tmp0" in gconf:
+        gconf = gconf.replace("overlay-tmp0","overlay-tmp")
     else:
-        os.system("cp --reflink=auto -r /.overlays/overlay-tmp0/boot/* /etc/mnt/boot >/dev/null 2>&1")
+        gconf = gconf.replace("overlay-tmp", "overlay-tmp0")
+    if "astOS Linux" in gconf:
+        gconf = gconf.replace("astOS Linux","astOS last booted deployment")
+    grubconf.close()
+    os.system("sed -i '$ d' /etc/mnt/boot/grub/grub.cfg")
+    grubconf = open("/etc/mnt/boot/grub/grub.cfg", "a")
+    grubconf.write(gconf)
+    grubconf.write("}\n")
+    grubconf.write("### END /etc/grub.d/41_custom ###")
+    grubconf.close()
+
+    grubconf = open("/.overlays/overlay-tmp0/boot/grub/grub.cfg","r")
+    line = grubconf.readline()
+    while "BEGIN /etc/grub.d/10_linux" not in line:
+        line = grubconf.readline()
+    line = grubconf.readline()
+    gconf = str("")
+    while "}" not in line:
+        gconf = str(gconf)+str(line)
+        line = grubconf.readline()
+    if "overlay-tmp0" in gconf:
+        gconf = gconf.replace("overlay-tmp0","overlay-tmp")
+    else:
+        gconf = gconf.replace("overlay-tmp", "overlay-tmp0")
+    if "astOS Linux" in gconf:
+        gconf = gconf.replace("astOS Linux","astOS last booted deployment")
+    grubconf.close()
+    os.system("sed -i '$ d' /.overlays/overlay-tmp0/boot/grub/grub.cfg")
+    grubconf = open("/.overlays/overlay-tmp0/boot/grub/grub.cfg", "a")
+    grubconf.write(gconf)
+    grubconf.write("}\n")
+    grubconf.write("### END /etc/grub.d/41_custom ###")
+    grubconf.close()
+
+
+    #
     os.system("umount /etc/mnt/boot >/dev/null 2>&1")
-#    os.system("reboot") # Enable for non-testing versions
 
 # Find new unused image dir
 def findnew():
@@ -748,20 +819,28 @@ def main(args):
             new_overlay()
         elif arg == "boot-update" or arg == "boot":
             update_boot(args[args.index(arg)+1])
-        elif arg == "boot-rollback" or arg == "rboot":
-            update_rboot(args[args.index(arg)+1])
         elif arg == "chroot" or arg == "cr" and (lock != True):
             ast_lock()
             chroot(args[args.index(arg)+1])
+            ast_unlock()
+        elif arg == "live-chroot":
+            ast_lock()
+            live_unlock()
             ast_unlock()
         elif arg == "install" or (arg == "in") and (lock != True):
             ast_lock()
             args_2 = args
             args_2.remove(args_2[0])
             args_2.remove(args_2[0])
+            live = False
+            if args_2[0] == "--live":
+                live = True
+                args_2.remove(args_2[0])
             coverlay = args_2[0]
             args_2.remove(args_2[0])
             install(coverlay, str(" ").join(args_2))
+            if live:
+                live_install(str(" ").join(args_2))
             ast_unlock()
         elif arg == "run" and (lock != True):
             ast_lock()
@@ -780,10 +859,14 @@ def main(args):
             clone_under(args[args.index(arg)+1], args[args.index(arg)+2])
         elif arg == "clone" or arg == "tree-clone":
             clone_as_tree(args[args.index(arg)+1])
+        elif arg == "rebuild" and (lock != True):
+            ast_lock()
+            rebuild(overlay)
+            ast_unlock()
         elif arg == "deploy":
             deploy(args[args.index(arg)+1])
         elif arg == "rollback":
-            deploy(args[args.index(arg)+1])
+            rollback()
         elif arg == "upgrade" or arg == "up" and (lock != True):
             ast_lock()
             upgrade(args[args.index(arg)+1])
@@ -861,7 +944,7 @@ def main(args):
         elif arg  == "tree":
             show_fstree()
         elif (lock == True):
-            print("Error, ast is locked")
+            print("Error, ast is locked. To force unlock use 'rm -rf /var/astpk/lock'.")
             break
         elif (arg == args[1]):
             print("Operation not found.")
