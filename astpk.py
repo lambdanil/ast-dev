@@ -160,12 +160,14 @@ def get_tmp():
 
 # Rebuild image
 def rebuild(overlay):
-    children = recurstree(fstree, overlay)
+    children = return_children(fstree, overlay)
     prepare(overlay)
     os.system("echo 'pacman -Qq > /var/astpk/pkglist' > /var/astpk/genpkgs")
     os.system("arch-chroot /.overlays/overlay-chr bash /var/astpk/genpkgs")
     os.system("echo 'installable_packages=$(comm -12 <(pacman -Slq | sort) <(sort /var/astpk/pkglist)) && pacman -S --noconfirm --needed --overwrite \* $installable_packages' > /var/astpk/pkgs")
-    force_delete(overlay)
+    os.system(f"btrfs sub del /.overlays/overlay-{overlay}")
+    os.system(f"btrfs sub del /.var/var-{overlay}")
+    os.system(f"btrfs sub del /.boot/boot-{overlay}")
     os.system(f"btrfs sub snap -r /.overlays/overlay-0 /.overlays/overlay-{overlay}")
     os.system(f"btrfs sub snap -r /.var/var-0 /.var/var-{overlay}")
     os.system(f"btrfs sub snap -r /.boot/boot-0 /.boot/boot-{overlay}")  # /etc is not changed, work on merging later
@@ -178,6 +180,9 @@ def rebuild(overlay):
         parent = get_parent(fstree, child)
         os.system("arch-chroot /.overlays/overlay-chr bash /var/astpk/genpkgs")
         force_delete(child)
+        os.system(f"btrfs sub del /.overlays/overlay-{parent}")
+        os.system(f"btrfs sub del /.var/var-{parent}")
+        os.system(f"btrfs sub del /.boot/boot-{parent}")
         os.system(f"btrfs sub snap -r /.overlays/overlay-{parent} /.overlays/overlay-{child}")
         os.system(f"btrfs sub snap -r /.var/var-{parent} /.var/var-{child}")
         os.system(f"btrfs sub snap -r /.boot/boot-{parent} /.boot/boot-{child}") # /etc is not changed, work on merging later
