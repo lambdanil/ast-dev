@@ -175,6 +175,7 @@ def rebuild(overlay):
     index = 0
     for child in children:
         prepare(child)
+        parent = get_parent(fstree, child)
         os.system("arch-chroot /.overlays/overlay-chr bash /var/astpk/genpkgs")
         force_delete(child)
         os.system(f"btrfs sub snap -r /.overlays/overlay-{parent} /.overlays/overlay-{child}")
