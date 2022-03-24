@@ -545,7 +545,6 @@ def pac(overlay,arg):
 
 # Delete without interaction
 def force_delete(overlay):
-    children = return_children(fstree, overlay)
     os.system(f"btrfs sub del /.boot/boot-{overlay} >/dev/null 2>&1")
     #os.system(f"btrfs sub del /.etc/etc-{overlay} >/dev/null 2>&1")
     os.system(f"btrfs sub del /.var/var-{overlay} >/dev/null 2>&1")
