@@ -160,17 +160,17 @@ def get_tmp():
 
 # Rebuild image
 def rebuild(overlay):
+    children = recurstree(fstree, overlay)
     prepare(overlay)
     os.system("echo 'pacman -Qq > /var/astpk/pkglist' > /var/astpk/genpkgs")
     os.system("arch-chroot /.overlays/overlay-chr bash /var/astpk/genpkgs")
-    os.system("echo 'installable_packages=$(comm -12 <(pacman -Slq | sort) <(sort /var/astpk/pkglist)) && pacman -S --noconfirm --needed $installable_packages' > /var/astpk/pkgs")
+    os.system("echo 'installable_packages=$(comm -12 <(pacman -Slq | sort) <(sort /var/astpk/pkglist)) && pacman -S --noconfirm --needed --overwrite \* $installable_packages' > /var/astpk/pkgs")
     force_delete(overlay)
     os.system(f"btrfs sub snap -r /.overlays/overlay-0 /.overlays/overlay-{overlay}")
     os.system(f"btrfs sub snap -r /.var/var-0 /.var/var-{overlay}")
     os.system(f"btrfs sub snap -r /.boot/boot-0 /.boot/boot-{overlay}")  # /etc is not changed, work on merging later
     prepare(overlay)
     os.system("arch-chroot /.overlays/overlay-chr bash /var/astpk/pkgs")
-    children = recurstree(fstree, overlay)
     children.remove(children[0])
     index = 0
     for child in children:
@@ -548,7 +548,7 @@ def force_delete(overlay):
     os.system(f"btrfs sub del /.boot/boot-{overlay} >/dev/null 2>&1")
     #os.system(f"btrfs sub del /.etc/etc-{overlay} >/dev/null 2>&1")
     os.system(f"btrfs sub del /.var/var-{overlay} >/dev/null 2>&1")
-    os.system(f"btrfs sub del /.overlays/overlay-{overlay}")
+    os.system(f"btrfs sub del /.overlays/overlay-{overlay}  >/dev/null 2>&1")
     #for child in children:  # This deletes the node itself along with it's children
     #    os.system(f"btrfs sub del /.boot/boot-{child} >/dev/null 2>&1")
     #    os.system(f"btrfs sub del /.etc/etc-{child} >/dev/null 2>&1")
