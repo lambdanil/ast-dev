@@ -50,14 +50,18 @@ It doesn't use it's own package format or package manager, instead relying on [p
 
 ---
 ## astOS compared to other similar distributions
-* **NixOS** - compared to nixOS, astOS is a more traditional system with how it's setup and maintained. While nixOS is entirely configured using the Nix programming language, astOS uses Arch's pacman package manager. astOS uses btrfs snapshots.
-  * astOS allows declarative configuration using Ansible, for similar functionality to NixOS
+* **NixOS** - compared to nixOS, astOS is a more traditional system with how it's setup and maintained. While nixOS is entirely configured using the Nix programming language, astOS uses Arch's pacman package manager. astOS consumes less storage, and configuring your system is faster and easier (less reproducible however), it also gives you more customization options
+  * astOS allows declarative configuration using Ansible, for somewhat similar functionality to NixOS
 * **Fedora Silverblue** - astOS is more customizable, but does require more manual setup.
 * **OpenSUSE MicroOS** - astOS is a more customizable system, but once again requires a bit more manual setup. MicroOS works similarly to astOS in the way it utilizes btrfs snapshots.
 
 ---
 ## Installation
 * astOS is installed from the official Arch Linux live iso available on [https://archlinux.org/](https://archlinux.org)
+* If you run into issues installing packages during installation, make sure you're using the newest arch iso, and if needed update the pacman keyring
+* You need an internet connection to install astOS
+* Currently astOS ships 2 installation profiles, one for minimal installs, and the other for desktop with the Gnome desktop environment, but support for more DE's will be added
+* The installation script is easily configurable and adjusted for your needs (but it works just fine without any modifications)
 
 Install git first - this will allow us to download the install script
 
@@ -71,6 +75,9 @@ git clone "https://github.com/CuBeRJAN/astOS"
 cd astOS  
 ```
 Partition and format drive
+
+* If installing on a BIOS system, use a dos (MBR) partition table
+* On EFI you can use GPT
 
 ```
 lsblk  # Find your drive name
@@ -224,12 +231,13 @@ ast base-update
 * Software can also be installed using pacman in a chroot
 * AUR can be used under the chroot
 * Flatpak can be used for persistent package installation
-* Using containers for additional software installation is also an option, the advantage is no need for a reboot. A recommended way of doing this is with [distrobox](https://github.com/89luca89/distrobox)
+* Using containers for additional software installation is also an option. An easy way of doing this is with [distrobox](https://github.com/89luca89/distrobox)
 
 ```
 ast install <snapshot> <package>
 ```
 * After installing you can sync the newly installed packages to all the branches of the tree with
+* Before syncing it's recommended to upgrade the tree, otherwise you could end up with duplicate packages
 
 ```
 ast sync <tree>
@@ -285,9 +293,7 @@ ast rollback
 
 * When running ast without arguments - IndexError: list index out of range
 * Running ast without root permissions shows permission denied errors instead of an error message
-* GDM and LightDM may not work  
 * Swap partition doesn't work, it's recommended to use a swapfile or zram instead
-* Remount error message on boot and shutdown
 * Docker has issues with permissions, to fix run
 ```
 sudo chmod 666 /var/run/docker.sock

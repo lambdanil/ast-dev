@@ -302,7 +302,7 @@ def update_tree(tree,treename):
             order.remove(order[0])
             order.remove(order[0])
             prepare(sarg)
-            os.system(f"arch-chroot /.overlays/overlay-chr pacman --noconfirm -Syu")
+            os.system(f"arch-chroot /.overlays/overlay-chr pacman --noconfirm -Syyu")
             posttrans(sarg)
         print(f"tree {treename} was updated")
 
@@ -458,12 +458,12 @@ def live_install(pkg):
     tmp = get_tmp()
     part = get_part()
     #os.system(f"chattr -RV -i /.overlays/overlay-{tmp}/usr > /dev/null 2>&1")
-    os.system(f"mount --bind /.overlays/overlay-{tmp} /.overlays/overlay-{tmp} > /dev/null 2>&")
+    os.system(f"mount --bind /.overlays/overlay-{tmp} /.overlays/overlay-{tmp} > /dev/null 2>&1")
     os.system(f"mount --bind /home /.overlays/overlay-{tmp}/home > /dev/null 2>&1")
     os.system(f"mount --bind /var /.overlays/overlay-{tmp}/var > /dev/null 2>&1")
     os.system(f"mount --bind /etc /.overlays/overlay-{tmp}/etc > /dev/null 2>&1")
     os.system(f"mount --bind /tmp /.overlays/overlay-{tmp}/tmp > /dev/null 2>&1")
-    os.system(f"arch-chroot /.overlays/overlay-{tmp} pacman -S  --overwrite '*' --noconfirm {pkg}")
+    os.system(f"arch-chroot /.overlays/overlay-{tmp} pacman -S  --overwrite \\* --noconfirm {pkg}")
     os.system(f"umount /.overlays/overlay-{tmp}/* > /dev/null 2>&1")
     os.system(f"umount /.overlays/overlay-{tmp} > /dev/null 2>&1")
     #os.system(f"chattr -RV +i /.overlays/overlay-{tmp}/usr > /dev/null 2>&1")
@@ -473,7 +473,7 @@ def live_unlock():
     tmp = get_tmp()
     part = get_part()
     #os.system(f"chattr -RV -i /.overlays/overlay-{tmp}/usr > /dev/null 2>&1")
-    os.system(f"mount --bind /.overlays/overlay-{tmp} /.overlays/overlay-{tmp} > /dev/null 2>&")
+    os.system(f"mount --bind /.overlays/overlay-{tmp} /.overlays/overlay-{tmp} > /dev/null 2>&1")
     os.system(f"mount --bind /home /.overlays/overlay-{tmp}/home > /dev/null 2>&1")
     os.system(f"mount --bind /var /.overlays/overlay-{tmp}/var > /dev/null 2>&1")
     os.system(f"mount --bind /etc /.overlays/overlay-{tmp}/etc > /dev/null 2>&1")
@@ -547,7 +547,7 @@ def delete(overlay):
 # Update base
 def update_base():
     prepare("0")
-    os.system(f"arch-chroot /.overlays/overlay-chr pacman -Syu")
+    os.system(f"arch-chroot /.overlays/overlay-chr pacman -Syyu")
     posttrans("0")
 
 def get_efi():
@@ -587,8 +587,7 @@ def posttrans(overlay):
     os.system(f"btrfs sub del /.overlays/overlay-{overlay} >/dev/null 2>&1")
     os.system(f"rm -rf /.etc/etc-chr/* >/dev/null 2>&1")
     os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/etc/* /.etc/etc-chr >/dev/null 2>&1")
-    os.system(f"btrfs sub del /.var/var-chr >/dev/null 2>&1")
-    os.system(f"btrfs sub create /.var/var-chr >/dev/null 2>&1")
+    os.system(f"rm -rf /.var/var-chr/* >/dev/null 2>&1")
     os.system(f"mkdir -p /.var/var-chr/lib/systemd >/dev/null 2>&1")
     os.system(f"mkdir -p /.var/var-chr/lib/pacman >/dev/null 2>&1")
     os.system(f"cp -r --reflink=auto /.overlays/overlay-chr/var/lib/systemd/* /.var/var-chr/lib/systemd >/dev/null 2>&1")
@@ -624,14 +623,14 @@ def upgrade(overlay):
         print("changing base image is not allowed")
     else:
         prepare(overlay)
-        os.system(f"arch-chroot /.overlays/overlay-chr pacman -Syu")
+        os.system(f"arch-chroot /.overlays/overlay-chr pacman -Syyu")
         posttrans(overlay)
 
 # Noninteractive update
 def autoupgrade(overlay):
     clone_as_tree(overlay)
     prepare(overlay)
-    excode = str(os.system(f"arch-chroot /.overlays/overlay-chr pacman --noconfirm -Syu"))
+    excode = str(os.system(f"arch-chroot /.overlays/overlay-chr pacman --noconfirm -Syyu"))
     if excode != "127":
         posttrans(overlay)
         os.system("echo 0 > /var/astpk/upstate")
@@ -906,7 +905,7 @@ def main(args):
         elif arg  == "tree":
             show_fstree()
         elif (lock == True):
-            print("Error, ast is locked")
+            print("Error, ast is locked. To force unlock use 'rm -rf /var/astpk/lock'.")
             break
         elif (arg == args[1]):
             print("Operation not found.")
