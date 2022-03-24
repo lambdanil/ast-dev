@@ -1,0 +1,22 @@
+#!/usr/bin/python
+import os
+import subprocess
+import sys
+
+args = list(sys.argv)
+
+user = os.getenv('USER')
+pkgs = args[1]
+nargs = args
+nargs = nargs.remove[0]
+nargs = nargs.remove[0]
+pkg_args = str(" ".join(nargs))
+
+out = str(subprocess.check_output(("sudo ast branch $(ast c)"), shell=True))
+sout = out.split(" ")
+build = sout[1]
+os.system(f"sudo ast run {build} pacman -S --noconfirm {pkgs}")
+os.system("clear")
+os.system(f"sudo ast run {build} sudo -u {user} {pkgs}")
+os.system(f"yes | sudo ast del {build}")
+os.system("clear")

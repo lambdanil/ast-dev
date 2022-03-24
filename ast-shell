@@ -1,0 +1,20 @@
+#!/usr/bin/python
+import os
+import subprocess
+import sys
+
+args = list(sys.argv)
+
+nargs = args
+nargs.remove(nargs[0])
+pkgs = str(" ".join(nargs))
+
+out = str(subprocess.check_output(("sudo ast branch $(ast c)"), shell=True))
+sout = out.split(" ")
+build = sout[1]
+os.system(f"sudo ast run {build} pacman -S --noconfirm {pkgs}")
+os.system("clear")
+print(pkgs, "::")
+os.system(f"sudo ast chroot {build}")
+os.system(f"yes | sudo ast del {build}")
+os.system("clear")
