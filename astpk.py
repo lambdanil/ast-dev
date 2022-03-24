@@ -171,8 +171,10 @@ def rebuild(overlay):
     prepare(overlay)
     os.system("arch-chroot /.overlays/overlay-chr bash /var/astpk/pkgs")
     children = recurstree(fstree, overlay)
+    index = 0
     for child in children:
-        parent = get_parent(fstree, child)
+        if index > 0:
+            parent = get_parent(fstree, child)
         prepare(child)
         os.system("arch-chroot /.overlays/overlay-chr bash /var/astpk/genpkgs")
         force_delete(child)
@@ -182,6 +184,7 @@ def rebuild(overlay):
         prepare(child)
         os.system("arch-chroot /.overlays/overlay-chr bash /var/astpk/pkgs")
         posttrans(overlay)
+        index += 1
 
 # Deploy image
 def deploy(overlay):
