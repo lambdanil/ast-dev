@@ -67,7 +67,9 @@ def main(args):
     os.system(f"echo 'ANSI_COLOR=\"38;2;23;147;209\"' >> /mnt/etc/os-release")
     os.system(f"echo 'HOME_URL=\"https://github.com/CuBeRJAN/astOS\"' >> /mnt/etc/os-release")
     os.system(f"echo 'LOGO=astos-logo' >> /mnt/etc/os-release")
-    
+    os.system(f"mkdir /mnt/usr/share/ast")
+    os.system(f"cp -r /mnt/var/lib/pacman/* /mnt/usr/share/ast")
+    os.system(f"sed -i s,\"#DBPath      = /var/lib/pacman/\",\"DBPath      = /usr/share/ast/\",g /mnt/etc/pacman.conf")
     os.system(f"echo 'DISTRIB_ID=\"astOS\"' > /mnt/etc/lsb-release")
     os.system(f"echo 'DISTRIB_RELEASE=\"rolling\"' >> /mnt/etc/lsb-release")
     os.system(f"echo 'DISTRIB_DESCRIPTION=astOS' >> /mnt/etc/lsb-release")
@@ -163,8 +165,10 @@ def main(args):
         os.system(f"echo '%wheel ALL=(ALL:ALL) ALL' >> /mnt/etc/sudoers")
         os.system(f"chmod -w /mnt/etc/sudoers")
         os.system(f"arch-chroot /mnt mkdir /home/{username}")
+        os.system(f"echo 'export XDG_RUNTIME_DIR=\"/run/user/1000\"' >> /home/{username}/.bashrc")
         os.system(f"arch-chroot /mnt chown -R {username} /home/{username}")
         os.system(f"arch-chroot /mnt systemctl enable gdm")
+        os.system(f"cp -r /mnt/var/lib/pacman/* /mnt/usr/share/ast")
 
         os.system("btrfs sub snap -r /mnt /mnt/.overlays/overlay-1")
         os.system("btrfs sub del /mnt/.etc/etc-tmp")

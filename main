@@ -1,0 +1,5 @@
+pacman -Qq | grep -vx "$( pacman -Qmq )"
+bashrc 
+vimrc 
+flatpak list --columns=application
+/etc

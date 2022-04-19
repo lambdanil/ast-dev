@@ -78,10 +78,11 @@ Partition and format drive
 
 * If installing on a BIOS system, use a dos (MBR) partition table
 * On EFI you can use GPT
+* The EFI partition has to be formatted to FAT32 before running the installer (```mkfs.fat -F32 /dev/<part>```)
 
 ```
 lsblk  # Find your drive name
-cfdisk /dev/*** # Format drive, make sure to add EFI partition, if using BIOS leave 2M before partition  
+cfdisk /dev/*** # Format drive, make sure to add an EFI partition, if using BIOS leave 2M free space before first partition  
 ```
 Run installer
 
@@ -152,6 +153,8 @@ ast del <tree>
 #### chroot into snapshot 
 * Once inside the chroot the OS behaves like regular Arch, so you can install and remove packages using pacman or similar
 * Do not run ast from inside a chroot, it could cause damage to the system, there is a failsafe in place, which can be bypassed with ```--chroot``` if you really need to (not recommended)  
+* The chroot has to be exited properly with ```exit```, otherwise the changes made will not be saved
+
 
 ```
 ast chroot <snapshot>

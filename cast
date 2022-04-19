@@ -413,8 +413,6 @@ def update_boot(overlay):
 def chroot(overlay):
     if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
         print("cannot chroot, overlay doesn't exist")
-    elif overlay == "0":
-        print("changing base image is not allowed")
     else:
         prepare(overlay)
         os.system(f"chroot /.overlays/overlay-chr{overlay}") # Arch specific chroot command because pacman is weird without it
@@ -424,8 +422,6 @@ def chroot(overlay):
 def chrrun(overlay,cmd):
     if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
         print("cannot chroot, overlay doesn't exist")
-    elif overlay == "0":
-        print("changing base image is not allowed")
     else:
         prepare(overlay)
         os.system(f"chroot /.overlays/overlay-chr{overlay} {cmd}") # Arch specific chroot command because pacman is weird without it
@@ -486,8 +482,6 @@ def live_unlock():
 def install(overlay,pkg):
     if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
         print("cannot install, overlay doesn't exist")
-    elif overlay == "0":
-        print("changing base image is not allowed")
     else:
         prepare(overlay)
         os.system(f"chroot /.overlays/overlay-chr{overlay} pacman -S {pkg}") 
@@ -497,8 +491,6 @@ def install(overlay,pkg):
 def remove(overlay,pkg):
     if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
         print("cannot remove, overlay doesn't exist")
-    elif overlay == "0":
-        print("changing base image is not allowed")
     else:
         prepare(overlay)
         os.system(f"chroot /.overlays/overlay-chr{overlay} pacman --noconfirm -Rns {pkg}")
@@ -508,8 +500,6 @@ def remove(overlay,pkg):
 def pac(overlay,arg):
     if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
         print("cannot run pacman, overlay doesn't exist")
-    elif overlay == "0":
-        print("changing base image is not allowed")
     else:
         prepare(overlay)
         os.system(f"chroot /.overlays/overlay-chr{overlay} pacman {arg}")
@@ -525,8 +515,6 @@ def delete(overlay):
         run = False
     if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
         print("cannot delete, tree doesn't exist")
-    elif overlay == "0":
-        print("changing base image is not allowed")
     elif run == True:
         children = return_children(fstree,overlay)
         os.system(f"btrfs sub del /.boot/boot-{overlay} >/dev/null 2>&1")
@@ -630,8 +618,6 @@ def posttrans(overlay):
 def upgrade(overlay):
     if not (os.path.exists(f"/.overlays/overlay-{overlay}")):
         print("cannot upgrade, overlay doesn't exist")
-    elif overlay == "0":
-        print("changing base image is not allowed")
     else:
         prepare(overlay)
         os.system(f"chroot /.overlays/overlay-chr{overlay} pacman -Syyu")

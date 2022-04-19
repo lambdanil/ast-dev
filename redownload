@@ -1,0 +1,3 @@
+pacman -Syy
+pacman -S --noconfirm archlinux-keyring
+pacman -Qqn | pacman --noconfirm -Sw - 
