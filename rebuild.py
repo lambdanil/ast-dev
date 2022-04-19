@@ -16,7 +16,7 @@ def main():
         os.system(f"cp -r /.etc/etc-{fromsnap}/* /.overlays/overlay-chr{tosnap}/etc/")
         print("please exit chroot shell now with 'exit'")
     else:
-        fromsnap = args[1]
+        tosnap = args[2]
         print(f"please chroot into snapshot {tosnap} in another console, then press enter")
         input("")
         os.system(f"chroot /.overlays/overlay-chr{tosnap} /var/astpk/redownload")
