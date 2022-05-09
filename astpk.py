@@ -695,7 +695,7 @@ def switchtmp():
         os.system("sed -i 's,@.etc/etc-tmp0,@.etc/etc-tmp,g' /.overlays/overlay-tmp/etc/fstab")
 #        os.system("sed -i 's,@.var/var-tmp0,@.var/var-tmp,g' /.overlays/overlay-tmp/etc/fstab")
         os.system("sed -i 's,@.boot/boot-tmp0,@.boot/boot-tmp,g' /.overlays/overlay-tmp/etc/fstab")
-        sfile = open("/.overlays/overlay-tmp0/etc/astpk-coverlay","r")
+        sfile = open("/.overlays/overlay-tmp0/etc/astpk.d/astpk-coverlay","r")
         snap = sfile.readline()
         sfile.close()
     else:
@@ -706,7 +706,7 @@ def switchtmp():
         os.system("sed -i 's,@.etc/etc-tmp,@.etc/etc-tmp0,g' /.overlays/overlay-tmp0/etc/fstab")
 #        os.system("sed -i 's,@.var/var-tmp,@.var/var-tmp0,g' /.overlays/overlay-tmp0/etc/fstab")
         os.system("sed -i 's,@.boot/boot-tmp,@.boot/boot-tmp0,g' /.overlays/overlay-tmp0/etc/fstab")
-        sfile = open("/.overlays/overlay-tmp/etc/astpk-coverlay", "r")
+        sfile = open("/.overlays/overlay-tmp/etc/astpk.d/astpk-coverlay", "r")
         snap = sfile.readline()
         sfile.close()
     #
