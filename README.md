@@ -14,8 +14,11 @@
   * [Snapshot management and deployments](https://github.com/CuBeRJAN/astOS#snapshot-management)
   * [Package management](https://github.com/CuBeRJAN/astOS#package-management)
 * [Additional documentation](https://github.com/CuBeRJAN/astOS#additional-documentation)
+  * [Configuring dual boot](https://github.com/CuBeRJAN/astOS#dual-boot)
+  * [Updating ast itself](https://github.com/CuBeRJAN/astOS#updating-ast-itself)
 * [Known bugs](https://github.com/CuBeRJAN/astOS#known-bugs)
 * [Contributing](https://github.com/CuBeRJAN/astOS#contributing)
+* [Community](https://github.com/CuBeRJAN/astOS#community)
 
 ---
 
@@ -50,17 +53,17 @@ It doesn't use it's own package format or package manager, instead relying on [p
 
 ---
 ## astOS compared to other similar distributions
-* **NixOS** - compared to nixOS, astOS is a more traditional system with how it's setup and maintained. While nixOS is entirely configured using the Nix programming language, astOS uses Arch's pacman package manager. astOS consumes less storage, and configuring your system is faster and easier (less reproducible however), it also gives you more customization options
+* **NixOS** - compared to nixOS, astOS is a more traditional system with how it's setup and maintained. While nixOS is entirely configured using the Nix programming language, astOS uses Arch's pacman package manager. astOS consumes less storage, and configuring your system is faster and easier (less reproducible however), it also gives you more customization options. astOS is FHS compliant, ensuring proper software compatability.
   * astOS allows declarative configuration using Ansible, for somewhat similar functionality to NixOS
-* **Fedora Silverblue** - astOS is more customizable, but does require more manual setup.
-* **OpenSUSE MicroOS** - astOS is a more customizable system, but once again requires a bit more manual setup. MicroOS works similarly to astOS in the way it utilizes btrfs snapshots.
+* **Fedora Silverblue/Kinoite** - astOS is more customizable, but does require more manual setup. astOS supports dual boot, unlike Silverblue.
+* **OpenSUSE MicroOS** - astOS is a more customizable system, but once again requires a bit more manual setup. MicroOS works similarly in the way it utilizes btrfs snapshots. astOS has an official KDE install, but also supports other desktop environments, while MicroOS only properly supports Gnome. astOS supports dual boot.
 
 ---
 ## Installation
 * astOS is installed from the official Arch Linux live iso available on [https://archlinux.org/](https://archlinux.org)
 * If you run into issues installing packages during installation, make sure you're using the newest arch iso, and if needed update the pacman keyring
 * You need an internet connection to install astOS
-* Currently astOS ships 2 installation profiles, one for minimal installs, and the other for desktop with the Gnome desktop environment, but support for more DE's will be added
+* Currently astOS ships 3 installation profiles, one for minimal installs and two for desktop, one with the Gnome desktop environment and one with KDE Plasma, but support for more DE's will be added
 * The installation script is easily configurable and adjusted for your needs (but it works just fine without any modifications)
 
 Install git first - this will allow us to download the install script
@@ -87,11 +90,11 @@ cfdisk /dev/*** # Format drive, make sure to add an EFI partition, if using BIOS
 Run installer
 
 ```
-python3 main.py /dev/<partition> /dev/<drive> /dev/<efi part> # You can skip the EFI partition if installing in BIOS mode
+python3 main.py /dev/<partition> /dev/<drive> /dev/<efi part> # Skip the EFI partition if installing in BIOS mode
 ```
 
 ## Post installation setup
-* astOS doesn't do much setup for the user, therefore some post-installation setup is going to be necessary
+* Post installation setup is not necessary if you install one of the desktop editions (Gnome or KDE)
 * A lot of information for how to handle post-install setup is available on the [ArchWiki page](https://wiki.archlinux.org/title/general_recommendations) 
 * Here is a small example setup procedure:
   * Start by creating a new snapshot from the base image using ```ast clone 0```
@@ -154,6 +157,7 @@ ast del <tree>
 * Once inside the chroot the OS behaves like regular Arch, so you can install and remove packages using pacman or similar
 * Do not run ast from inside a chroot, it could cause damage to the system, there is a failsafe in place, which can be bypassed with ```--chroot``` if you really need to (not recommended)  
 * The chroot has to be exited properly with ```exit```, otherwise the changes made will not be saved
+* If you don't exit chroot the "clean" way with ```exit```, it's recommended to run ```ast tmp``` to clear temporary files left behind
 
 
 ```
@@ -291,6 +295,48 @@ ast rollback
 
 * Then you can reboot back to a working system
 
+## Extras
+
+#### Dual boot
+* astOS supports dual boot using the GRUB bootloader
+* When installing the system, use the existing EFI partition
+* to configure dual boot, we must begin by installing the ```os-prober``` package:
+
+```
+ast install <snapshot> os-prober
+```
+
+* Now we have to configure grub
+
+```
+ast chroot <snapshot>
+echo 'GRUB_DISABLE_OS_PROBER=false' >> /etc/default/grub
+exit
+```
+
+* Now just deploy the snapshot to reconfigure the bootloader
+
+```
+ast deploy <snapshot>
+```
+
+#### Updating ast itself
+* sometimes it may be necessary to update ast itself
+* this can be done in a few steps:
+
+```
+git clone "https://github.com/CuBeRJAN/astOS"
+cd astOS
+cp astpk.py ast 
+chmod +x ast
+cp ./ast /var/astpk/ast  # Copy new ast to /var, accessible from all snapshots
+ast trun <snapshot> cp /var/astpk/ast /usr/bin/ast  # Copy over new ast
+ast clone 0
+ast run <clone of 0> cp /var/astpk/ast /usr/bin/ast  # Now we update snapshot 0 in a clone  
+btrfs sub del /.overlays/overlay-0  # Here we manually replace snapshot 0 with the updated snapshot
+btrfs sub snap -r /.overlays/overlay-<clone of 0> /.overlays/overlay-0
+ast del <clone of 0>  # Remove temporary snapshot
+```
 
 ## Known bugs
 
@@ -308,6 +354,10 @@ sudo chmod 666 /var/run/docker.sock
 * Code and documentation contributions are welcome
 * Bug reports are a good way of contributing to the project too
 * Before submitting a pull request test your code and make sure to comment it properly
+
+# Community
+* Please feel free to join us on [Discord](https://discord.gg/YVHEC6XNZw) for further discussion and support!
+* Happy worry-free snapshotting!
 
 ---
 
