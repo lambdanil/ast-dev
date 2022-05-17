@@ -127,6 +127,8 @@ def get_part():
     cpart.close()
     part = str(subprocess.check_output(f"blkid | grep '{uuid}' | awk '{{print $1}}'", shell=True))
     part = part.replace(":","")
+    part = part.replace("b'","")
+    part = part.replace("\\n'","")
     return(part)
 
 # Get tmp partition state
