@@ -125,7 +125,7 @@ def get_part():
     uuid = cpart.readline()
     uuid = uuid.replace('\n',"")
     cpart.close()
-    part = subprocess.check_output(f"blkid | grep '{uuid}' | awk '{{print $1}}'", shell=True)
+    part = str(subprocess.check_output(f"blkid | grep '{uuid}' | awk '{{print $1}}'", shell=True))
     part = part.replace(":","")
     return(part)
 
@@ -663,8 +663,8 @@ def switchtmp():
         os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp0,@.snapshots/rootfs/snapshot-tmp,g' /etc/mnt/boot/grub/grub.cfg") # Overwrite grub config boot subvolume
         os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp0,@.snapshots/rootfs/snapshot-tmp,g' /.snapshots/rootfs/snapshot-tmp/boot/grub/grub.cfg")
         os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp0,@.snapshots/rootfs/snapshot-tmp,g' /.snapshots/rootfs/snapshot-tmp/etc/fstab") # Write fstab for new deployment
-        os.system("sed -i 's,ˇ@.snapshots/etc/etc-tmp0,ˇ@.snapshots/etc/etc-tmp,g' /.snapshots/rootfs/snapshot-tmp/etc/fstab")
-#        os.system("sed -i 's,ˇ@.snapshots/var/var-tmp0,ˇ@.snapshots/var/var-tmp,g' /.snapshots/rootfs/snapshot-tmp/etc/fstab")
+        os.system("sed -i 's,@.snapshots/etc/etc-tmp0,@.snapshots/etc/etc-tmp,g' /.snapshots/rootfs/snapshot-tmp/etc/fstab")
+#        os.system("sed -i 's,@.snapshots/var/var-tmp0,@.snapshots/var/var-tmp,g' /.snapshots/rootfs/snapshot-tmp/etc/fstab")
         os.system("sed -i 's,@.snapshots/boot/boot-tmp0,@.snapshots/boot/boot-tmp,g' /.snapshots/rootfs/snapshot-tmp/etc/fstab")
         sfile = open("/.snapshots/rootfs/snapshot-tmp0/usr/share/ast/snap","r")
         snap = sfile.readline()
@@ -675,8 +675,8 @@ def switchtmp():
         os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp,@.snapshots/rootfs/snapshot-tmp0,g' /etc/mnt/boot/grub/grub.cfg")
         os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp,@.snapshots/rootfs/snapshot-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/boot/grub/grub.cfg")
         os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp,@.snapshots/rootfs/snapshot-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/etc/fstab")
-        os.system("sed -i 's,ˇ@.snapshots/etc/etc-tmp,ˇ@.snapshots/etc/etc-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/etc/fstab")
-#        os.system("sed -i 's,ˇ@.snapshots/var/var-tmp,ˇ@.snapshots/var/var-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/etc/fstab")
+        os.system("sed -i 's,@.snapshots/etc/etc-tmp,@.snapshots/etc/etc-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/etc/fstab")
+#        os.system("sed -i 's,@.snapshots/var/var-tmp,@.snapshots/var/var-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/etc/fstab")
         os.system("sed -i 's,@.snapshots/boot/boot-tmp,@.snapshots/boot/boot-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/etc/fstab")
         sfile = open("/.snapshots/rootfs/snapshot-tmp/usr/share/ast/snap", "r")
         snap = sfile.readline()
