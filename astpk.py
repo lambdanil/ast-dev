@@ -121,7 +121,7 @@ def get_snapshot():
 
 # Get drive partition
 def get_part():
-    cpart = open("/.snapshots/ast/images/part","r")
+    cpart = open("/.snapshots/ast/part","r")
     uuid = cpart.readline()
     uuid = uuid.replace('\n',"")
     cpart.close()
