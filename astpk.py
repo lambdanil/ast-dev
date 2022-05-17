@@ -654,7 +654,8 @@ def rollback():
 # Switch between /tmp deployments
 def switchtmp():
     mount = get_tmp()
-    part = get_part()
+    spart = get_part()
+    part = to_uuid(part)
     # This part is useless? Dumb stuff
     os.system(f"mkdir -p /etc/mnt/boot >/dev/null 2>&1")
     os.system(f"mount {part} -o subvol=@boot /etc/mnt/boot >/dev/null 2>&1") # Mount boot partition for writing
