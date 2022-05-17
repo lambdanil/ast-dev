@@ -657,7 +657,7 @@ def switchtmp():
     part = get_part()
     # This part is useless? Dumb stuff
     os.system(f"mkdir -p /etc/mnt/boot >/dev/null 2>&1")
-    os.system(f"mount {part} -o subvol=@boot /etc/mnt/boot >/dev/null 2>&1") # Mount boot partition for writing
+    os.system(f"mount {part} -o subvol=@boot /etc/mnt/boot ") # Mount boot partition for writing
     if "tmp0" in mount:
         os.system("cp --reflink=auto -r /.snapshots/rootfs/snapshot-tmp/boot/* /etc/mnt/boot")
         os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp0,@.snapshots/rootfs/snapshot-tmp,g' /etc/mnt/boot/grub/grub.cfg") # Overwrite grub config boot subvolume
@@ -683,6 +683,7 @@ def switchtmp():
         snap = snap.replace(" ","")
         sfile.close()
     #
+    snap = snap.replace('\n',"")
     grubconf = open("/etc/mnt/boot/grub/grub.cfg","r")
     line = grubconf.readline()
     while "BEGIN /etc/grub.d/10_linux" not in line:
