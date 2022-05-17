@@ -186,7 +186,7 @@ def main(args):
         os.system(f"echo 'export XDG_RUNTIME_DIR=\"/run/user/1000\"' >> /home/{username}/.bashrc")
         os.system(f"arch-chroot /mnt chown -R {username} /home/{username}")
         os.system(f"arch-chroot /mnt systemctl enable gdm")
-        os.system(f"cp -r /mnt/var/lib/pacman/* /mnt/usr/share/ast")
+        os.system(f"cp -r /mnt/var/lib/pacman/* /mnt/usr/share/ast/db")
 
         os.system("btrfs sub snap -r /mnt /mnt/.snapshots/rootfs/snapshot-1")
         os.system("btrfs sub del /mnt/.snapshots/etc/etc-tmp")
@@ -239,7 +239,7 @@ def main(args):
         os.system(f"echo 'export XDG_RUNTIME_DIR=\"/run/user/1000\"' >> /home/{username}/.bashrc")
         os.system(f"arch-chroot /mnt chown -R {username} /home/{username}")
         os.system(f"arch-chroot /mnt systemctl enable sddm")
-        os.system(f"cp -r /mnt/var/lib/pacman/* /mnt/usr/share/ast")
+        os.system(f"cp -r /mnt/var/lib/pacman/* /mnt/usr/share/ast/db")
 
         os.system("btrfs sub snap -r /mnt /mnt/.snapshots/rootfs/snapshot-1")
         os.system("btrfs sub del /mnt/.snapshots/etc/etc-tmp")
