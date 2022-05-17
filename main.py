@@ -58,7 +58,7 @@ def main(args):
         os.system(f"echo '{args[1]} /{mntdir} btrfs subvol=@{mntdir},compress=zstd,noatime 0 0' >> /mnt/etc/fstab")
     if efi:
         os.system(f"echo '{args[3]} /boot/efi vfat umask=0077 0 2' >> /mnt/etc/fstab")
-    os.system("mkdir -p /mnt/usr/share/ast /mnt/var/lib/ast/part")
+    os.system("mkdir -p /mnt/usr/share/ast /mnt/var/lib/ast")
     os.system(f"echo '{args[1]}' > /mnt/var/lib/ast/part")
     os.system(f"echo '0' > /mnt/usr/share/ast/snap")
 
