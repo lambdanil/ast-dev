@@ -34,8 +34,8 @@ def main(args):
         efi = False
 #    efi = False #
     os.system(f"mount {args[1]} /mnt")
-    btrdirs = ["@","@.snapshots","@home","@tmp","@root","@var","@etc","@boot","@.snapshots/boot"]
-    mntdirs = ["",".snapshots","home","tmp","root","var","etc","boot",".snapshots/boot"]
+    btrdirs = ["@","@.snapshots","@home","@tmp","@root","@var","@etc","@boot"]
+    mntdirs = ["",".snapshots","home","tmp","root","var","etc","boot"]
     for btrdir in btrdirs:
         os.system(f"btrfs sub create /mnt/{btrdir}")
     os.system(f"umount /mnt")
@@ -102,7 +102,7 @@ def main(args):
     os.system("sed -i '0,/@etc/{s,@etc,@.snapshots/etc/etc-tmp,}' /mnt/etc/fstab")
 #    os.system("sed -i '0,/@var/{s,@var,@.snapshots/var/var-tmp,}' /mnt/etc/fstab")
     os.system("sed -i '0,/@boot/{s,@boot,@.snapshots/boot/boot-tmp,}' /mnt/etc/fstab")
-    os.system("mkdir -p /mnt/root/images")
+    os.system("mkdir -p /mnt/var/ast/images")
     os.system("arch-chroot /mnt btrfs sub set-default /.snapshots/rootfs/snapshot-tmp")
     clear()
     os.system("arch-chroot /mnt passwd")
