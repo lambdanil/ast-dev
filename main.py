@@ -119,6 +119,10 @@ def main(args):
     if DesktopInstall:
         os.system("echo {\\'name\\': \\'root\\', \\'children\\': [{\\'name\\': \\'0\\'},{\\'name\\': \\'1\\'}]} > /mnt/var/lib/ast/fstree")
         os.system(f"echo '{args[1]}' > /mnt/var/lib/ast/part")
+    os.system("mkdir /.snapshots/rootfs")
+    os.system("mkdir /.snapshots/etc")
+    os.system("mkdir /.snapshots/var")
+    os.system("mkdir /.snapshots/boot")
     os.system(f"arch-chroot /mnt sed -i s,Arch,astOS,g /etc/default/grub")
     os.system(f"arch-chroot /mnt grub-install {args[2]}")
     os.system(f"arch-chroot /mnt grub-mkconfig {args[2]} -o /boot/grub/grub.cfg")
