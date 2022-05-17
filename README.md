@@ -336,9 +336,9 @@ cd astOS
 cp astpk.py ast 
 chmod +x ast
 cp ./ast /var/astpk/ast  # Copy new ast to /var, accessible from all snapshots
-ast trun <snapshot> cp /var/astpk/ast /usr/bin/ast  # Copy over new ast
+ast trun <snapshot> cp /var/astpk/ast /usr/local/sbin/ast  # Copy over new ast
 ast clone 0
-ast run <clone of 0> cp /var/astpk/ast /usr/bin/ast  # Now we update snapshot 0 in a clone  
+ast run <clone of 0> cp /var/astpk/ast /usr/local/sbin/ast  # Now we update snapshot 0 in a clone  
 btrfs sub del /.snapshots/snapshot-0  # Here we manually replace snapshot 0 with the updated snapshot
 btrfs sub snap -r /.snapshots/snapshot-<clone of 0> /.snapshots/snapshot-0
 ast del <clone of 0>  # Remove temporary snapshot
