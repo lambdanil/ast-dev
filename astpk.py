@@ -747,7 +747,7 @@ def tmpclear():
 # Find new unused image dir
 def findnew():
     i = 0
-    snapshots = os.listdir("/.snapshots")
+    snapshots = os.listdir("/.snapshots/rootfs")
     etcs = os.listdir("/.snapshots/etc")
     vars = os.listdir("/.snapshots/var")
     boots = os.listdir("/.snapshots/boot")
