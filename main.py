@@ -12,7 +12,7 @@ def clear():
 
 def to_uuid(part):
     spart = part.split("/")
-    part = spart[spart.len()-1]
+    part = spart[len(spart)-1]
     uuid = subprocess.check_output(f"lsblk -f | grep {part} | awk '{{print $3}}'", shell=True)
     return uuid
 
