@@ -125,7 +125,7 @@ def get_part():
     uuid = cpart.readline()
     uuid = uuid.replace('\n',"")
     cpart.close()
-    part = subprocess.check_output(f"blkid | grep {uuid} | awk '{{print $1}}'")
+    part = subprocess.check_output(f"blkid | grep '{uuid}' | awk '{{print $1}}'", shell=True)
     part = part.replace(":","")
     return(part)
 
