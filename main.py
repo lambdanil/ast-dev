@@ -62,11 +62,11 @@ def main(args):
         os.system("pacstrap /mnt efibootmgr")
     mntdirs_n = mntdirs
     mntdirs_n.remove("")
-    os.system(f"echo UUID=\"'{to_uuid(args[1])}\" / btrfs subvol=@,compress=zstd,noatime,ro 0 0' > /mnt/etc/fstab")
+    os.system(f"echo 'UUID=\"{to_uuid(args[1])}\" / btrfs subvol=@,compress=zstd,noatime,ro 0 0' > /mnt/etc/fstab")
     for mntdir in mntdirs_n:
-        os.system(f"echo UUID=\"'{to_uuid(args[1])}\" /{mntdir} btrfs subvol=@{mntdir},compress=zstd,noatime 0 0' >> /mnt/etc/fstab")
+        os.system(f"echo 'UUID=\"{to_uuid(args[1])}\" /{mntdir} btrfs subvol=@{mntdir},compress=zstd,noatime 0 0' >> /mnt/etc/fstab")
     if efi:
-        os.system(f"echo UUID=\"'{to_uuid(args[3])}\" /boot/efi vfat umask=0077 0 2' >> /mnt/etc/fstab")
+        os.system(f"echo 'UUID=\"{to_uuid(args[3])}\" /boot/efi vfat umask=0077 0 2' >> /mnt/etc/fstab")
     os.system("mkdir -p /mnt/usr/share/ast /mnt/var/lib/ast")
     astpart = to_uuid(args[1])
     os.system(f"echo '{astpart}' > /mnt/var/lib/ast/part")
