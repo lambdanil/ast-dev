@@ -658,9 +658,9 @@ def switchtmp():
     os.system(f"mount {part} -o subvol=@boot /etc/mnt/boot >/dev/null 2>&1") # Mount boot partition for writing
     if "tmp0" in mount:
         os.system("cp --reflink=auto -r /.snapshots/rootfs/snapshot-tmp/boot/* /etc/mnt/boot")
-        os.system("sed -i 's,@.snapshots/snapshot-tmp0,@.snapshots/snapshot-tmp,g' /etc/mnt/boot/grub/grub.cfg") # Overwrite grub config boot subvolume
-        os.system("sed -i 's,@.snapshots/snapshot-tmp0,@.snapshots/snapshot-tmp,g' /.snapshots/rootfs/snapshot-tmp/boot/grub/grub.cfg")
-        os.system("sed -i 's,@.snapshots/snapshot-tmp0,@.snapshots/snapshot-tmp,g' /.snapshots/rootfs/snapshot-tmp/etc/fstab") # Write fstab for new deployment
+        os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp0,@.snapshots/rootfs/snapshot-tmp,g' /etc/mnt/boot/grub/grub.cfg") # Overwrite grub config boot subvolume
+        os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp0,@.snapshots/rootfs/snapshot-tmp,g' /.snapshots/rootfs/snapshot-tmp/boot/grub/grub.cfg")
+        os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp0,@.snapshots/rootfs/snapshot-tmp,g' /.snapshots/rootfs/snapshot-tmp/etc/fstab") # Write fstab for new deployment
         os.system("sed -i 's,@/.snapshots/etc/etc-tmp0,@/.snapshots/etc/etc-tmp,g' /.snapshots/rootfs/snapshot-tmp/etc/fstab")
 #        os.system("sed -i 's,@/.snapshots/var/var-tmp0,@/.snapshots/var/var-tmp,g' /.snapshots/rootfs/snapshot-tmp/etc/fstab")
         os.system("sed -i 's,@.boot/boot-tmp0,@.boot/boot-tmp,g' /.snapshots/rootfs/snapshot-tmp/etc/fstab")
@@ -670,9 +670,9 @@ def switchtmp():
         sfile.close()
     else:
         os.system("cp --reflink=auto -r /.snapshots/rootfs/snapshot-tmp0/boot/* /etc/mnt/boot")
-        os.system("sed -i 's,@.snapshots/snapshot-tmp,@.snapshots/snapshot-tmp0,g' /etc/mnt/boot/grub/grub.cfg")
-        os.system("sed -i 's,@.snapshots/snapshot-tmp,@.snapshots/snapshot-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/boot/grub/grub.cfg")
-        os.system("sed -i 's,@.snapshots/snapshot-tmp,@.snapshots/snapshot-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/etc/fstab")
+        os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp,@.snapshots/rootfs/snapshot-tmp0,g' /etc/mnt/boot/grub/grub.cfg")
+        os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp,@.snapshots/rootfs/snapshot-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/boot/grub/grub.cfg")
+        os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp,@.snapshots/rootfs/snapshot-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/etc/fstab")
         os.system("sed -i 's,@/.snapshots/etc/etc-tmp,@/.snapshots/etc/etc-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/etc/fstab")
 #        os.system("sed -i 's,@/.snapshots/var/var-tmp,@/.snapshots/var/var-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/etc/fstab")
         os.system("sed -i 's,@.boot/boot-tmp,@.boot/boot-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/etc/fstab")
