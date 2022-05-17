@@ -115,6 +115,10 @@ def main(args):
             os.system("arch-chroot /mnt passwd")
     os.system("arch-chroot /mnt systemctl enable NetworkManager")
     os.system("mkdir -p /mnt/var/lib/ast")
+    os.system("mkdir -p /mnt/.snapshots/rootfs")
+    os.system("mkdir -p /mnt/.snapshots/var")
+    os.system("mkdir -p /mnt/.snapshots/etc")
+    os.system("mkdir -p /mnt/.snapshots/boot")
     os.system("echo {\\'name\\': \\'root\\', \\'children\\': [{\\'name\\': \\'0\\'}]} > /mnt/var/lib/ast/fstree")
     if DesktopInstall:
         os.system("echo {\\'name\\': \\'root\\', \\'children\\': [{\\'name\\': \\'0\\'},{\\'name\\': \\'1\\'}]} > /mnt/var/lib/ast/fstree")
