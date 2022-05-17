@@ -14,7 +14,9 @@ def clear():
 def to_uuid(part):
     spart = part.split("/")
     part = spart[len(spart)-1]
-    uuid = subprocess.check_output(f"lsblk -f | grep {part} | awk '{{print $3}}'", shell=True)
+    uuid = str(subprocess.check_output(f"lsblk -f | grep {part} | awk '{{print $3}}'", shell=True))
+    uuid = uuid.replace("b'","")
+    uuid = uuid.replace("\\n'","")
     return uuid
 
 def main(args):
