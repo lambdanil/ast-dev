@@ -39,8 +39,8 @@ def import_tree_file(treename):
 def print_tree(tree):
     snapshot = get_snapshot()
     for pre, fill, node in anytree.RenderTree(tree):
-        if os.path.isfile(f"/var/ast/images/{node.name}-desc"):
-            descfile = open(f"/var/ast/images/{node.name}-desc","r")
+        if os.path.isfile(f"/var/lib/ast/images/{node.name}-desc"):
+            descfile = open(f"/var/lib/ast/images/{node.name}-desc","r")
             desc = descfile.readline()
             descfile.close()
         else:
@@ -54,8 +54,8 @@ def print_tree(tree):
 
 # Write new description
 def write_desc(snapshot, desc):
-    os.system(f"touch /var/ast/images/{snapshot}-desc")
-    descfile = open(f"/var/ast/images/{snapshot}-desc","w")
+    os.system(f"touch /var/lib/ast/images/{snapshot}-desc")
+    descfile = open(f"/var/lib/ast/images/{snapshot}-desc","w")
     descfile.write(desc)
     descfile.close()
 
