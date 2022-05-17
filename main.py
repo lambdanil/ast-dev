@@ -41,7 +41,7 @@ def main(args):
     os.system(f"umount /mnt")
     os.system(f"mount {args[1]} -o subvol=@,compress=zstd,noatime /mnt")
     os.system("mkdir /mnt/{boot,etc,var}")
-    os.system("mkdir /.snapshots/{rootfs,etc,var,boot}")
+    os.system("mkdir /mnt/.snapshots/{rootfs,etc,var,boot}")
     for mntdir in mntdirs:
         os.system(f"mkdir /mnt/{mntdir}")
         os.system(f"mount {args[1]} -o subvol={btrdirs[mntdirs.index(mntdir)]},compress=zstd,noatime /mnt/{mntdir}")
@@ -119,10 +119,6 @@ def main(args):
     if DesktopInstall:
         os.system("echo {\\'name\\': \\'root\\', \\'children\\': [{\\'name\\': \\'0\\'},{\\'name\\': \\'1\\'}]} > /mnt/var/lib/ast/fstree")
         os.system(f"echo '{args[1]}' > /mnt/var/lib/ast/part")
-    os.system("mkdir /.snapshots/rootfs")
-    os.system("mkdir /.snapshots/etc")
-    os.system("mkdir /.snapshots/var")
-    os.system("mkdir /.snapshots/boot")
     os.system(f"arch-chroot /mnt sed -i s,Arch,astOS,g /etc/default/grub")
     os.system(f"arch-chroot /mnt grub-install {args[2]}")
     os.system(f"arch-chroot /mnt grub-mkconfig {args[2]} -o /boot/grub/grub.cfg")
