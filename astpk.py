@@ -122,9 +122,11 @@ def get_snapshot():
 # Get drive partition
 def get_part():
     cpart = open("/var/lib/ast/part","r")
-    part = cpart.readline()
-    part = part.replace('\n',"")
+    uuid = cpart.readline()
+    uuid = uuid.replace('\n',"")
     cpart.close()
+    part = subprocess.check_output(f"blkid | grep {uuid} | awk '{{print $1}}'")
+    part = part.replace(":","")
     return(part)
 
 # Get tmp partition state
