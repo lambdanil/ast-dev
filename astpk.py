@@ -39,8 +39,8 @@ def import_tree_file(treename):
 def print_tree(tree):
     snapshot = get_snapshot()
     for pre, fill, node in anytree.RenderTree(tree):
-        if os.path.isfile(f"/var/lib/ast/images/{node.name}-desc"):
-            descfile = open(f"/var/lib/ast/images/{node.name}-desc","r")
+        if os.path.isfile(f"/.snapshots/ast/images/{node.name}-desc"):
+            descfile = open(f"/.snapshots/ast/images/{node.name}-desc","r")
             desc = descfile.readline()
             descfile.close()
         else:
@@ -54,8 +54,8 @@ def print_tree(tree):
 
 # Write new description
 def write_desc(snapshot, desc):
-    os.system(f"touch /var/lib/ast/images/{snapshot}-desc")
-    descfile = open(f"/var/lib/ast/images/{snapshot}-desc","w")
+    os.system(f"touch /.snapshots/ast/images/{snapshot}-desc")
+    descfile = open(f"/.snapshots/ast/images/{snapshot}-desc","w")
     descfile.write(desc)
     descfile.close()
 
@@ -121,7 +121,7 @@ def get_snapshot():
 
 # Get drive partition
 def get_part():
-    cpart = open("/var/lib/ast/part","r")
+    cpart = open("/.snapshots/ast/images/part","r")
     uuid = cpart.readline()
     uuid = uuid.replace('\n',"")
     cpart.close()
@@ -227,14 +227,14 @@ def clone_under(snapshot, branch):
 
 # Lock ast
 def ast_lock():
-    os.system("touch /var/lib/ast/lock-disable")
+    os.system("touch /.snapshots/ast/lock-disable")
 
 # Unlock
 def ast_unlock():
-    os.system("rm -rf /var/lib/ast/lock")
+    os.system("rm -rf /.snapshots/ast/lock")
 
 def get_lock():
-    if os.path.exists("/var/lib/ast/lock"):
+    if os.path.exists("/.snapshots/ast/lock"):
         return(True)
     else:
         return(False)
@@ -620,15 +620,15 @@ def autoupgrade(snapshot):
     excode = str(os.system(f"chroot /.snapshots/rootfs/snapshot-chr{snapshot} pacman --noconfirm -Syyu"))
     if "1" not in excode:
         posttrans(snapshot)
-        os.system("echo 0 > /var/lib/ast/upstate")
-        os.system("echo $(date) >> /var/lib/ast/upstate")
+        os.system("echo 0 > /.snapshots/ast/upstate")
+        os.system("echo $(date) >> /.snapshots/ast/upstate")
     else:
-        os.system("echo 1 > /var/lib/ast/upstate")
-        os.system("echo $(date) >> /var/lib/ast/upstate")
+        os.system("echo 1 > /.snapshots/ast/upstate")
+        os.system("echo $(date) >> /.snapshots/ast/upstate")
 
 # Check if last update was successful
 def check_update():
-    upstate = open("/var/lib/ast/upstate", "r")
+    upstate = open("/.snapshots/ast/upstate", "r")
     line = upstate.readline()
     date = upstate.readline()
     if "1" in line:
@@ -770,9 +770,9 @@ def main(args):
     global fstree # Currently these are global variables, fix sometime
     global efi
     global fstreepath # ---
-    fstreepath = str("/var/lib/ast/fstree") # Path to fstree file
+    fstreepath = str("/.snapshots/ast/fstree") # Path to fstree file
     efi = get_efi()
-    fstree = importer.import_(import_tree_file("/var/lib/ast/fstree")) # Import fstree file
+    fstree = importer.import_(import_tree_file("/.snapshots/ast/fstree")) # Import fstree file
     # Recognize argument and call appropriate function
     for arg in args:
         if isChroot == True and ("--chroot" not in args):
