@@ -21,8 +21,6 @@ def to_uuid(part):
     uuid = uuid.replace("\\n'","")
     return uuid
 
-
-
 def main(args):
     while True:
         clear()
@@ -38,6 +36,22 @@ def main(args):
         if InstallProfile == "3":
             DesktopInstall = 2
             break
+
+    clear()
+    while True:
+        print("Select a timezone (type list to list):")
+        zone = input("> ")
+        if zone == "list":
+            os.system("ls /usr/share/zoneinfo | less")
+        else:
+            timezone = str(f"/usr/share/zoneinfo/{zone}")
+            break
+
+    clear()
+    print("Enter hostname:")
+    hostname = input("> ")
+    os.system(f"echo {hostname} > /mnt/etc/hostname")
+
     os.system("pacman -S --noconfirm archlinux-keyring")
     os.system(f"mkfs.btrfs -f {args[1]}")
     if os.path.exists("/sys/firmware/efi"):
@@ -88,16 +102,7 @@ def main(args):
     os.system(f"echo 'DISTRIB_ID=\"astOS\"' > /mnt/etc/lsb-release")
     os.system(f"echo 'DISTRIB_RELEASE=\"rolling\"' >> /mnt/etc/lsb-release")
     os.system(f"echo 'DISTRIB_DESCRIPTION=astOS' >> /mnt/etc/lsb-release")
-    clear()
 
-    while True:
-        print("Select a timezone (type list to list):")
-        zone = input("> ")
-        if zone == "list":
-            os.system("ls /usr/share/zoneinfo | less")
-        else:
-            timezone = str(f"/usr/share/zoneinfo/{zone}")
-            break
     os.system(f"arch-chroot /mnt ln -sf {timezone} /etc/localtime")
     os.system("echo 'en_US UTF-8' >> /mnt/etc/locale.gen")
     #os.system("sed -i s/'^#'// /mnt/etc/locale.gen")
@@ -105,10 +110,6 @@ def main(args):
     os.system(f"arch-chroot /mnt locale-gen")
     os.system(f"arch-chroot /mnt hwclock --systohc")
     os.system(f"echo 'LANG=en_US.UTF-8' > /mnt/etc/locale.conf")
-    clear()
-    print("Enter hostname:")
-    hostname = input("> ")
-    os.system(f"echo {hostname} > /mnt/etc/hostname")
 
     os.system("sed -i '0,/@/{s,@,@.snapshots/rootfs/snapshot-tmp,}' /mnt/etc/fstab")
     os.system("sed -i '0,/@etc/{s,@etc,@.snapshots/etc/etc-tmp,}' /mnt/etc/fstab")
