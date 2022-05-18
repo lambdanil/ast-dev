@@ -44,7 +44,6 @@ def main(args):
     clear()
     print("Enter hostname:")
     hostname = input("> ")
-    os.system(f"echo {hostname} > /mnt/etc/hostname")
 
     os.system("pacman -S --noconfirm archlinux-keyring")
     os.system(f"mkfs.btrfs -f {args[1]}")
@@ -104,7 +103,8 @@ def main(args):
     os.system(f"arch-chroot /mnt locale-gen")
     os.system(f"arch-chroot /mnt hwclock --systohc")
     os.system(f"echo 'LANG=en_US.UTF-8' > /mnt/etc/locale.conf")
-
+    os.system(f"echo {hostname} > /mnt/etc/hostname")
+    
     os.system("sed -i '0,/@/{s,@,@.snapshots/rootfs/snapshot-tmp,}' /mnt/etc/fstab")
     os.system("sed -i '0,/@etc/{s,@etc,@.snapshots/etc/etc-tmp,}' /mnt/etc/fstab")
 #    os.system("sed -i '0,/@var/{s,@var,@.snapshots/var/var-tmp,}' /mnt/etc/fstab")
