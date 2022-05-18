@@ -34,6 +34,7 @@ def main(args):
         if InstallProfile == "3":
             DesktopInstall = 2
             break
+    os.system("pacman -S --noconfirm archlinux-keyring")
     os.system(f"mkfs.btrfs -f {args[1]}")
     if os.path.exists("/sys/firmware/efi"):
         efi = True
