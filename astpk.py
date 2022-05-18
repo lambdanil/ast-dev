@@ -18,16 +18,17 @@ args = list(sys.argv)
 
 # Directories
 # All images share one /var
-# boot is always at @boot
+# global boot is always at @boot
 # *-tmp - temporary directories used to boot deployed image
 # *-chr - temporary directories used to chroot into image or copy images around
-# /.snapshots/var/var-* == individual var for each image
-# /.snapshots/etc/etc-* == individual etc for each image
+# /.snapshots/var/var-* == individual /var for each image
+# /.snapshots/etc/etc-* == individual /etc for each image
+# /.snapshots/boot/boot-* == individual /boot for each image
 # /.snapshots/rootfs/snapshot-* == images
 # /root/images/*-desc == descriptions
 # /usr/share/ast == files that store current snapshot info
 # /usr/share/ast/db == package database
-# /var/lib/ast(/fstree) == ast files, stores fstree
+# /var/lib/ast(/fstree) == ast files, stores fstree, symlink to /.snapshots/ast
 
 # Import filesystem tree file in this function
 def import_tree_file(treename):
