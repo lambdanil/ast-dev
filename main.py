@@ -34,8 +34,6 @@ def main(args):
         if InstallProfile == "3":
             DesktopInstall = 2
             break
-    os.system("pacman --noconfirm -Sy")
-    confirm = "n"
     os.system(f"mkfs.btrfs -f {args[1]}")
     if os.path.exists("/sys/firmware/efi"):
         efi = True
@@ -49,11 +47,10 @@ def main(args):
         os.system(f"btrfs sub create /mnt/{btrdir}")
     os.system(f"umount /mnt")
     os.system(f"mount {args[1]} -o subvol=@,compress=zstd,noatime /mnt")
-    os.system("mkdir /mnt/{boot,etc,var}")
-    os.system("mkdir /mnt/.snapshots/{rootfs,etc,var,boot}")
     for mntdir in mntdirs:
         os.system(f"mkdir /mnt/{mntdir}")
         os.system(f"mount {args[1]} -o subvol={btrdirs[mntdirs.index(mntdir)]},compress=zstd,noatime /mnt/{mntdir}")
+    os.system("mkdir -p /mnt/.snapshots/{rootfs,etc,var,boot}")
     if efi:
         os.system("mkdir /mnt/boot/efi")
         os.system(f"mount {args[3]} /mnt/boot/efi")
