@@ -82,7 +82,7 @@ def main(args):
     for mntdir in mntdirs_n:
         os.system(f"echo 'UUID=\"{to_uuid(args[1])}\" /{mntdir} btrfs subvol=@{mntdir},compress=zstd,noatime 0 0' >> /mnt/etc/fstab")
     if efi:
-        os.system(f"echo 'UUID=\"{to_uuid_efi(args[3])}\" /boot/efi vfat umask=0077 0 2' >> /mnt/etc/fstab")
+        os.system(f"echo 'UUID=\"{to_uuid(args[3])}\" /boot/efi vfat umask=0077 0 2' >> /mnt/etc/fstab")
     os.system("mkdir -p /mnt/.snapshots/ast")
     astpart = to_uuid(args[1])
     os.system(f"echo '{astpart}' > /mnt/.snapshots/ast/part")
