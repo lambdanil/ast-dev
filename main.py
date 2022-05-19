@@ -66,7 +66,7 @@ def main(args):
     if efi:
         os.system("mkdir /mnt/boot/efi")
         os.system(f"mount {args[3]} /mnt/boot/efi")
-    os.system("pacstrap /mnt base vim linux-lts linux-firmware python-anytree dhcpcd btrfs-progs python3 git arch-install-scripts networkmanager grub")
+    os.system("pacstrap /mnt base linux linux-firmware nano python3 python-anytree dhcpcd btrfs-progs networkmanager grub")
     if efi:
         os.system("pacstrap /mnt efibootmgr")
     mntdirs_n = mntdirs
@@ -79,6 +79,7 @@ def main(args):
     os.system("mkdir -p /mnt/.snapshots/ast")
     astpart = to_uuid(args[1])
     os.system(f"echo '{astpart}' > /mnt/.snapshots/ast/part")
+    os.system(f"mkdir -p /mnt/usr/share/ast/db")
     os.system(f"echo '0' > /mnt/usr/share/ast/snap")
 
     os.system(f"echo 'NAME=\"astOS\"' > /mnt/etc/os-release")
@@ -88,8 +89,6 @@ def main(args):
     os.system(f"echo 'ANSI_COLOR=\"38;2;23;147;209\"' >> /mnt/etc/os-release")
     os.system(f"echo 'HOME_URL=\"https://github.com/CuBeRJAN/astOS\"' >> /mnt/etc/os-release")
     os.system(f"echo 'LOGO=astos-logo' >> /mnt/etc/os-release")
-    os.system(f"mkdir /mnt/usr/share/ast")
-    os.system(f"mkdir /mnt/usr/share/ast/db")
     os.system(f"cp -r /mnt/var/lib/pacman/* /mnt/usr/share/ast/db")
     os.system(f"sed -i s,\"#DBPath      = /var/lib/pacman/\",\"DBPath      = /usr/share/ast/db/\",g /mnt/etc/pacman.conf")
     os.system(f"echo 'DISTRIB_ID=\"astOS\"' > /mnt/etc/lsb-release")
@@ -122,11 +121,7 @@ def main(args):
         else:
             os.system("arch-chroot /mnt passwd")
     os.system("arch-chroot /mnt systemctl enable NetworkManager")
-    os.system("mkdir -p /mnt/.snapshots/ast")
-    os.system("mkdir -p /mnt/.snapshots/rootfs")
-    os.system("mkdir -p /mnt/.snapshots/var")
-    os.system("mkdir -p /mnt/.snapshots/etc")
-    os.system("mkdir -p /mnt/.snapshots/boot")
+    os.system("mkdir -p /mnt/.snapshots/{ast,boot,etc,rootfs,var}")
     os.system("echo {\\'name\\': \\'root\\', \\'children\\': [{\\'name\\': \\'0\\'}]} > /mnt/.snapshots/ast/fstree")
     if DesktopInstall:
         os.system("echo {\\'name\\': \\'root\\', \\'children\\': [{\\'name\\': \\'0\\'},{\\'name\\': \\'1\\'}]} > /mnt/.snapshots/ast/fstree")
@@ -142,8 +137,7 @@ def main(args):
     os.system("btrfs sub create /mnt/.snapshots/var/var-tmp")
     os.system("btrfs sub create /mnt/.snapshots/boot/boot-tmp")
 #    os.system("cp --reflink=auto -r /mnt/var/* /mnt/.snapshots/var/var-tmp")
-    os.system("mkdir -p /mnt/.snapshots/var/var-tmp/lib/pacman")
-    os.system("mkdir -p /mnt/.snapshots/var/var-tmp/lib/systemd")
+    os.system("mkdir -p /mnt/.snapshots/var/var-tmp/lib/{pacman,systemd}")
     os.system("cp --reflink=auto -r /mnt/var/lib/pacman/* /mnt/.snapshots/var/var-tmp/lib/pacman/")
     os.system("cp --reflink=auto -r /mnt/var/lib/systemd/* /mnt/.snapshots/var/var-tmp/lib/systemd/")
     os.system("cp --reflink=auto -r /mnt/boot/* /mnt/.snapshots/boot/boot-tmp")
