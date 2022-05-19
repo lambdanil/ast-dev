@@ -66,7 +66,7 @@ def main(args):
     if efi:
         os.system("mkdir /mnt/boot/efi")
         os.system(f"mount {args[3]} /mnt/boot/efi")
-    os.system("pacstrap /mnt base vim linux-lts linux-firmware python-anytree dhcpcd btrfs-progs python3 git arch-install-scripts networkmanager grub")
+    os.system("pacstrap /mnt base linux linux-firmware nano python3 python-anytree dhcpcd btrfs-progs networkmanager grub")
     if efi:
         os.system("pacstrap /mnt efibootmgr")
     mntdirs_n = mntdirs
