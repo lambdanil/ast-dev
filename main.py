@@ -79,6 +79,7 @@ def main(args):
     os.system("mkdir -p /mnt/.snapshots/ast")
     astpart = to_uuid(args[1])
     os.system(f"echo '{astpart}' > /mnt/.snapshots/ast/part")
+    os.system(f"mkdir -p /mnt/usr/share/ast/db")
     os.system(f"echo '0' > /mnt/usr/share/ast/snap")
 
     os.system(f"echo 'NAME=\"astOS\"' > /mnt/etc/os-release")
@@ -88,8 +89,6 @@ def main(args):
     os.system(f"echo 'ANSI_COLOR=\"38;2;23;147;209\"' >> /mnt/etc/os-release")
     os.system(f"echo 'HOME_URL=\"https://github.com/CuBeRJAN/astOS\"' >> /mnt/etc/os-release")
     os.system(f"echo 'LOGO=astos-logo' >> /mnt/etc/os-release")
-    os.system(f"mkdir /mnt/usr/share/ast")
-    os.system(f"mkdir /mnt/usr/share/ast/db")
     os.system(f"cp -r /mnt/var/lib/pacman/* /mnt/usr/share/ast/db")
     os.system(f"sed -i s,\"#DBPath      = /var/lib/pacman/\",\"DBPath      = /usr/share/ast/db/\",g /mnt/etc/pacman.conf")
     os.system(f"echo 'DISTRIB_ID=\"astOS\"' > /mnt/etc/lsb-release")
