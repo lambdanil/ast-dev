@@ -121,11 +121,7 @@ def main(args):
         else:
             os.system("arch-chroot /mnt passwd")
     os.system("arch-chroot /mnt systemctl enable NetworkManager")
-    os.system("mkdir -p /mnt/.snapshots/ast")
-    os.system("mkdir -p /mnt/.snapshots/rootfs")
-    os.system("mkdir -p /mnt/.snapshots/var")
-    os.system("mkdir -p /mnt/.snapshots/etc")
-    os.system("mkdir -p /mnt/.snapshots/boot")
+    os.system("mkdir -p /mnt/.snapshots/{ast,boot,etc,rootfs,var}")
     os.system("echo {\\'name\\': \\'root\\', \\'children\\': [{\\'name\\': \\'0\\'}]} > /mnt/.snapshots/ast/fstree")
     if DesktopInstall:
         os.system("echo {\\'name\\': \\'root\\', \\'children\\': [{\\'name\\': \\'0\\'},{\\'name\\': \\'1\\'}]} > /mnt/.snapshots/ast/fstree")
@@ -141,8 +137,7 @@ def main(args):
     os.system("btrfs sub create /mnt/.snapshots/var/var-tmp")
     os.system("btrfs sub create /mnt/.snapshots/boot/boot-tmp")
 #    os.system("cp --reflink=auto -r /mnt/var/* /mnt/.snapshots/var/var-tmp")
-    os.system("mkdir -p /mnt/.snapshots/var/var-tmp/lib/pacman")
-    os.system("mkdir -p /mnt/.snapshots/var/var-tmp/lib/systemd")
+    os.system("mkdir -p /mnt/.snapshots/var/var-tmp/lib/{pacman,systemd}")
     os.system("cp --reflink=auto -r /mnt/var/lib/pacman/* /mnt/.snapshots/var/var-tmp/lib/pacman/")
     os.system("cp --reflink=auto -r /mnt/var/lib/systemd/* /mnt/.snapshots/var/var-tmp/lib/systemd/")
     os.system("cp --reflink=auto -r /mnt/boot/* /mnt/.snapshots/boot/boot-tmp")
