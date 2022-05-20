@@ -257,13 +257,13 @@ def main(args):
     if efi:
         os.system("umount /mnt/boot/efi")
 #    os.system("mkdir /mnt/.snapshots/var/var-tmp")
-    os.system("mkdir /mnt/.snapshots/boot/boot-tmp")
+#    os.system("mkdir /mnt/.snapshots/boot/boot-tmp")
 #    os.system(f"mount {args[1]} -o subvol=@var,compress=zstd,noatime /mnt/.snapshots/var/var-tmp")
     os.system(f"mount {args[1]} -o subvol=@boot,compress=zstd,noatime /mnt/.snapshots/boot/boot-tmp")
 #    os.system("cp --reflink=auto -r /mnt/.snapshots/var/var-tmp/* /mnt/var")
     os.system("cp --reflink=auto -r /mnt/.snapshots/boot/boot-tmp/* /mnt/boot")
     os.system("umount /mnt/etc")
-    os.system("mkdir /mnt/.snapshots/etc/etc-tmp")
+#    os.system("mkdir /mnt/.snapshots/etc/etc-tmp")
     os.system(f"mount {args[1]} -o subvol=@etc,compress=zstd,noatime /mnt/.snapshots/etc/etc-tmp")
     os.system("cp --reflink=auto -r /mnt/.snapshots/etc/etc-tmp/* /mnt/etc")
     if DesktopInstall:
