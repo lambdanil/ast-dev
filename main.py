@@ -259,9 +259,9 @@ def main(args):
     os.system("rm -rf /mnt/root/*")
     os.system("rm -rf /mnt/tmp/*")
 #    os.system("umount /mnt/var")
-    os.system("umount /mnt/boot")
     if efi:
         os.system("umount /mnt/boot/efi")
+    os.system("umount /mnt/boot")
 #    os.system("mkdir /mnt/.snapshots/var/var-tmp")
 #    os.system("mkdir /mnt/.snapshots/boot/boot-tmp")
 #    os.system(f"mount {args[1]} -o subvol=@var,compress=zstd,noatime /mnt/.snapshots/var/var-tmp")
