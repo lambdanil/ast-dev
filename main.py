@@ -253,9 +253,9 @@ def main(args):
         os.system("btrfs sub snap /mnt/.snapshots/rootfs/snapshot-0 /mnt/.snapshots/rootfs/snapshot-tmp")
 
 #    os.system("umount /mnt/var")
-    os.system("umount /mnt/boot")
     if efi:
         os.system("umount /mnt/boot/efi")
+    os.system("umount /mnt/boot")
 #    os.system("mkdir /mnt/.snapshots/var/var-tmp")
 #    os.system("mkdir /mnt/.snapshots/boot/boot-tmp")
 #    os.system(f"mount {args[1]} -o subvol=@var,compress=zstd,noatime /mnt/.snapshots/var/var-tmp")

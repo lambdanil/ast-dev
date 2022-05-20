@@ -640,9 +640,9 @@ def check_update():
     upstate.close()
 
 def chroot_check():
-	chroot = True
-	#If following command succeeds with exit code 0, definitely not inside chroot
-    if not os.system("unshare -U True"): chroot = False
+    chroot = True
+    #If following command succeeds with exit code 0, definitely not inside chroot
+    if not os.system("unshare -U true"): chroot = False
     return(chroot)
 
 # Rollback last booted deployment
