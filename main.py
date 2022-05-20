@@ -256,6 +256,8 @@ def main(args):
 
     os.system("cp -r /mnt/root/* /mnt/.snapshots/root/")
     os.system("cp -r /mnt/root/* /mnt/.snapshots/tmp/")
+    os.system("rm -rf /mnt/root/*")
+    os.system("rm -rf /mnt/tmp/*")
 #    os.system("umount /mnt/var")
     os.system("umount /mnt/boot")
     if efi:
