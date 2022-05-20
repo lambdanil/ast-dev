@@ -80,7 +80,6 @@ def main(args):
     os.system("echo '/.snapshots/ast/root /root none bind 0 0' >> /mnt/etc/fstab")
     os.system("echo '/.snapshots/ast/tmp /tmp none bind 0 0' >> /mnt/etc/fstab")
     astpart = to_uuid(args[1])
-    os.system(f"echo '{astpart}' > /mnt/.snapshots/ast/part")
     os.system(f"mkdir -p /mnt/usr/share/ast/db")
     os.system(f"echo '0' > /mnt/usr/share/ast/snap")
 
@@ -147,6 +146,7 @@ def main(args):
     os.system("btrfs sub snap -r /mnt/.snapshots/var/var-tmp /mnt/.snapshots/var/var-0")
     os.system("btrfs sub snap -r /mnt/.snapshots/boot/boot-tmp /mnt/.snapshots/boot/boot-0")
     os.system("btrfs sub snap -r /mnt/.snapshots/etc/etc-tmp /mnt/.snapshots/etc/etc-0")
+    os.system(f"echo '{astpart}' > /mnt/.snapshots/ast/part")
     if DesktopInstall == 1:
         os.system(f"echo '1' > /mnt/usr/share/ast/snap")
         os.system("pacstrap /mnt flatpak gnome gnome-extra gnome-themes-extra gdm pipewire pipewire-pulse sudo")
