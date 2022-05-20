@@ -640,11 +640,9 @@ def check_update():
     upstate.close()
 
 def chroot_check():
-    chroot = True # When inside chroot
-    with open("/proc/mounts", "r") as mounts:
-        for line in mounts:
-            if str("/.snapshots btrfs") in str(line):
-                chroot = False
+	chroot = True
+	#If following command succeeds with exit code 0, definitely not inside chroot
+    if not os.system("unshare -U True"): chroot = False
     return(chroot)
 
 # Rollback last booted deployment
