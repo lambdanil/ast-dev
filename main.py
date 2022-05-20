@@ -53,8 +53,8 @@ def main(args):
         efi = False
 #    efi = False #
     os.system(f"mount {args[1]} /mnt")
-    btrdirs = ["@","@.snapshots","@home","@tmp","@root","@var","@etc","@boot"]
-    mntdirs = ["",".snapshots","home","tmp","root","var","etc","boot"]
+    btrdirs = ["@","@.snapshots","@home","@var","@etc","@boot"]
+    mntdirs = ["",".snapshots","home","var","etc","boot"]
     for btrdir in btrdirs:
         os.system(f"btrfs sub create /mnt/{btrdir}")
     os.system(f"umount /mnt")
@@ -62,7 +62,8 @@ def main(args):
     for mntdir in mntdirs:
         os.system(f"mkdir /mnt/{mntdir}")
         os.system(f"mount {args[1]} -o subvol={btrdirs[mntdirs.index(mntdir)]},compress=zstd,noatime /mnt/{mntdir}")
-    os.system("mkdir -p /mnt/.snapshots/{rootfs,etc,var,boot}")
+    os.system("mkdir -p /mnt/{tmp,root}")
+    os.system("mkdir -p /mnt/.snapshots/{rootfs,etc,var,boot,tmp,root}")
     if efi:
         os.system("mkdir /mnt/boot/efi")
         os.system(f"mount {args[3]} /mnt/boot/efi")
@@ -76,7 +77,8 @@ def main(args):
         os.system(f"echo 'UUID=\"{to_uuid(args[1])}\" /{mntdir} btrfs subvol=@{mntdir},compress=zstd,noatime 0 0' >> /mnt/etc/fstab")
     if efi:
         os.system(f"echo 'UUID=\"{to_uuid(args[3])}\" /boot/efi vfat umask=0077 0 2' >> /mnt/etc/fstab")
-    os.system("mkdir -p /mnt/.snapshots/ast")
+    os.system("echo '/.snapshots/ast/root /root none bind 0 0' >> /mnt/etc/fstab")
+    os.system("echo '/.snapshots/ast/tmp /tmp none bind 0 0' >> /mnt/etc/fstab")
     astpart = to_uuid(args[1])
     os.system(f"echo '{astpart}' > /mnt/.snapshots/ast/part")
     os.system(f"mkdir -p /mnt/usr/share/ast/db")
@@ -252,10 +254,14 @@ def main(args):
     else:
         os.system("btrfs sub snap /mnt/.snapshots/rootfs/snapshot-0 /mnt/.snapshots/rootfs/snapshot-tmp")
 
+    os.system("cp -r /mnt/root/* /mnt/.snapshots/root/")
+    os.system("cp -r /mnt/root/* /mnt/.snapshots/tmp/")
+    os.system("rm -rf /mnt/root/*")
+    os.system("rm -rf /mnt/tmp/*")
 #    os.system("umount /mnt/var")
+    os.system("umount /mnt/boot")
     if efi:
         os.system("umount /mnt/boot/efi")
-    os.system("umount /mnt/boot")
 #    os.system("mkdir /mnt/.snapshots/var/var-tmp")
 #    os.system("mkdir /mnt/.snapshots/boot/boot-tmp")
 #    os.system(f"mount {args[1]} -o subvol=@var,compress=zstd,noatime /mnt/.snapshots/var/var-tmp")
