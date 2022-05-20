@@ -181,7 +181,7 @@ def deploy(snapshot):
         print(f"{snapshot} was deployed to /")
 
 # Add node to branch
-def extend_branch(snapshot):
+def extend_branch(snapshot, desc=""):
     if not (os.path.exists(f"/.snapshots/rootfs/snapshot-{snapshot}")):
         print("cannot branch, snapshot doesn't exist")
     else:
@@ -192,6 +192,7 @@ def extend_branch(snapshot):
         os.system(f"btrfs sub snap -r /.snapshots/boot/boot-{snapshot} /.snapshots/boot/boot-{i} >/dev/null 2>&1")
         add_node_to_parent(fstree,snapshot,i)
         write_tree(fstree)
+        if desc: write_desc(i, desc)
         print(f"branch {i} added to {snapshot}")
 
 # Clone branch under same parent,
@@ -352,15 +353,15 @@ def clone_as_tree(snapshot):
         print(f"tree {i} cloned from {snapshot}")
 
 # Creates new tree from base file
-def new_snapshot():
+def new_snapshot(desc=""):
     i = findnew()
     os.system(f"btrfs sub snap -r /.snapshots/rootfs/snapshot-0 /.snapshots/rootfs/snapshot-{i} >/dev/null 2>&1")
     os.system(f"btrfs sub snap -r /.snapshots/etc/etc-0 /.snapshots/etc/etc-{i} >/dev/null 2>&1")
     os.system(f"btrfs sub snap -r /.snapshots/boot/boot-0 /.snapshots/boot/boot-{i} >/dev/null 2>&1")
     os.system(f"btrfs sub snap -r /.snapshots/var/var-0 /.snapshots/var/var-{i} >/dev/null 2>&1")
-#    append_base_tree(fstree, i)
     append_base_tree(fstree,i)
     write_tree(fstree)
+    if desc: write_desc(i, desc)
     print(f"new tree {i} created")
 
 # Calls print function
