@@ -62,9 +62,8 @@ def main(args):
     for mntdir in mntdirs:
         os.system(f"mkdir /mnt/{mntdir}")
         os.system(f"mount {args[1]} -o subvol={btrdirs[mntdirs.index(mntdir)]},compress=zstd,noatime /mnt/{mntdir}")
+    os.system("mkdir -p /mnt/{tmp,root}")
     os.system("mkdir -p /mnt/.snapshots/{rootfs,etc,var,boot,tmp,root}")
-    os.system(f"mount --bind /mnt/.snapshots/ast/tmp /mnt/tmp")
-    os.system(f"mount --bind /mnt/.snapshots/ast/root /mnt/root")
     if efi:
         os.system("mkdir /mnt/boot/efi")
         os.system(f"mount {args[3]} /mnt/boot/efi")
@@ -255,6 +254,8 @@ def main(args):
     else:
         os.system("btrfs sub snap /mnt/.snapshots/rootfs/snapshot-0 /mnt/.snapshots/rootfs/snapshot-tmp")
 
+    os.system("cp -r /mnt/root/* /mnt/.snapshots/root/")
+    os.system("cp -r /mnt/root/* /mnt/.snapshots/tmp/")
 #    os.system("umount /mnt/var")
     os.system("umount /mnt/boot")
     if efi:
