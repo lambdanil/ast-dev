@@ -54,7 +54,7 @@ def main(args):
 #    efi = False #
     os.system(f"mount {args[1]} /mnt")
     btrdirs = ["@","@.snapshots","@home","@var","@etc","@boot"]
-    mntdirs = ["",".snapshots","home","var","etc","boot"]
+    mntdirs = ["",".snapshots","home","var","etc"]
     for btrdir in btrdirs:
         os.system(f"btrfs sub create /mnt/{btrdir}")
     os.system(f"umount /mnt")
@@ -62,7 +62,7 @@ def main(args):
     for mntdir in mntdirs:
         os.system(f"mkdir /mnt/{mntdir}")
         os.system(f"mount {args[1]} -o subvol={btrdirs[mntdirs.index(mntdir)]},compress=zstd,noatime /mnt/{mntdir}")
-    os.system("mkdir -p /mnt/{tmp,root}")
+    os.system("mkdir -p /mnt/{tmp,root,boot}")
     os.system("mkdir -p /mnt/.snapshots/{rootfs,etc,var,boot,tmp,root}")
     if efi:
         os.system("mkdir /mnt/boot/efi")
@@ -131,17 +131,10 @@ def main(args):
     os.system(f"arch-chroot /mnt grub-mkconfig {args[2]} -o /boot/grub/grub.cfg")
     os.system("sed -i '0,/subvol=@/{s,subvol=@,subvol=@.snapshots/rootfs/snapshot-tmp,g}' /mnt/boot/grub/grub.cfg")
     os.system("cp ./astpk.py /mnt/usr/local/sbin/ast")
-    if efi:
-        os.system("umount -r /mnt/boot/efi")
-    os.system("umount -r /mnt/boot")
-    os.system("mkdir -p /mnt/etc/boot")
-    os.system(f"mount {args[2]} -o subvol=@boot /mnt/etc/boot")
-    os.system(f"cp -r /mnt/etc/boot/* /mnt/boot")
-    os.system(f"rm -rf /mnt/etc/boot/*linux*")
-    os.system("umount /mnt/etc/boot")
     os.system(f"mount {args[2]} -o subvol=@boot /mnt/boot")
-    if efi:
-        os.system(os.system(f"mount {args[3]} /mnt/boot/efi"))
+    os.system(f"mkdir -p  /mnt/etc/boot/grub")
+    os.system("cp /mnt/boot/grub/grub.cfg /mnt/etc/boot/grub")
+    os.system("umount /mnt/etc/boot")
     os.system("arch-chroot /mnt chmod +x /usr/local/sbin/ast")
     os.system("btrfs sub snap -r /mnt /mnt/.snapshots/rootfs/snapshot-0")
     os.system("btrfs sub create /mnt/.snapshots/etc/etc-tmp")
