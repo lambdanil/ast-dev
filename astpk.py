@@ -632,7 +632,7 @@ def switchtmp():
     os.system(f"mkdir -p /etc/mnt/boot >/dev/null 2>&1")
     os.system(f"mount {part} -o subvol=@boot /etc/mnt/boot ") # Mount boot partition for writing
     if "tmp0" in mount:
-        os.system("cp --reflink=auto -r /.snapshots/rootfs/snapshot-tmp/boot/* /etc/mnt/boot")
+        os.system("cp --reflink=auto -r /.snapshots/rootfs/snapshot-tmp/boot/grub/grub.cfg /etc/mnt/boot")
         os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp0,@.snapshots/rootfs/snapshot-tmp,g' /etc/mnt/boot/grub/grub.cfg") # Overwrite grub config boot subvolume
         os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp0,@.snapshots/rootfs/snapshot-tmp,g' /.snapshots/rootfs/snapshot-tmp/boot/grub/grub.cfg")
         os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp0,@.snapshots/rootfs/snapshot-tmp,g' /.snapshots/rootfs/snapshot-tmp/etc/fstab") # Write fstab for new deployment
@@ -643,7 +643,7 @@ def switchtmp():
         snap = snap.replace(" ", "")
         sfile.close()
     else:
-        os.system("cp --reflink=auto -r /.snapshots/rootfs/snapshot-tmp0/boot/* /etc/mnt/boot")
+        os.system("cp --reflink=auto -r /.snapshots/rootfs/snapshot-tmp0/boot/grub/grub.cfg /etc/mnt/boot")
         os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp,@.snapshots/rootfs/snapshot-tmp0,g' /etc/mnt/boot/grub/grub.cfg")
         os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp,@.snapshots/rootfs/snapshot-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/boot/grub/grub.cfg")
         os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp,@.snapshots/rootfs/snapshot-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/etc/fstab")

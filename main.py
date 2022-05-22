@@ -137,6 +137,7 @@ def main(args):
     os.system("mkdir -p /mnt/etc/boot")
     os.system(f"mount {args[2]} -o subvol=@boot /mnt/etc/boot")
     os.system(f"cp -r /mnt/etc/boot/* /mnt/boot")
+    os.system(f"rm -rf /mnt/etc/boot/*linux*")
     os.system("umount /mnt/etc/boot")
     os.system(f"mount {args[2]} -o subvol=@boot /mnt/boot")
     if efi:
