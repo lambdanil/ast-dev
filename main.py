@@ -131,12 +131,16 @@ def main(args):
     os.system(f"arch-chroot /mnt grub-mkconfig {args[2]} -o /boot/grub/grub.cfg")
     os.system("sed -i '0,/subvol=@/{s,subvol=@,subvol=@.snapshots/rootfs/snapshot-tmp,g}' /mnt/boot/grub/grub.cfg")
     os.system("cp ./astpk.py /mnt/usr/local/sbin/ast")
+    if efi:
+        os.system("umount -r /mnt/boot/efi")
     os.system("umount -r /mnt/boot")
     os.system("mkdir -p /mnt/etc/boot")
     os.system(f"mount {args[2]} -o subvol=@boot /mnt/etc/boot")
     os.system(f"cp -r /mnt/etc/boot /mnt/boot")
     os.system("umount /mnt/etc/boot")
     os.system(f"mount {args[2]} -o subvol=@boot /mnt/boot")
+    if efi:
+        os.system(os.system(f"mount {args[3]} /mnt/boot/efi"))
     os.system("arch-chroot /mnt chmod +x /usr/local/sbin/ast")
     os.system("btrfs sub snap -r /mnt /mnt/.snapshots/rootfs/snapshot-0")
     os.system("btrfs sub create /mnt/.snapshots/etc/etc-tmp")
