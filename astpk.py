@@ -123,14 +123,10 @@ def get_snapshot():
 # Get drive partition
 def get_part():
     cpart = open("/.snapshots/ast/part","r")
-    uuid = cpart.readline()
-    uuid = uuid.replace('\n',"")
+    uuid = cpart.readline().replace('\n',"")
     cpart.close()
     part = str(subprocess.check_output(f"blkid | grep '{uuid}' | awk '{{print $1}}'", shell=True))
-    part = part.replace(":","")
-    part = part.replace("b'","")
-    part = part.replace("\\n'","")
-    return(part)
+    return(part.replace(":","").replace("b'","").replace("\\n'",""))
 
 # Get tmp partition state
 def get_tmp():
@@ -525,13 +521,6 @@ def update_base():
     os.system(f"chroot /.snapshots/rootfs/snapshot-chr0 pacman -Syyu")
     posttrans("0")
 
-def get_efi():
-    if os.path.exists("/sys/firmware/efi"):
-        efi = True
-    else:
-        efi = False
-    return(efi)
-
 # Prepare snapshot to chroot dir to install or chroot into
 def prepare(snapshot):
     unchr(snapshot)
@@ -768,10 +757,8 @@ def main(args):
     isChroot = chroot_check()
     lock = get_lock() # True = locked
     global fstree # Currently these are global variables, fix sometime
-    global efi
     global fstreepath # ---
     fstreepath = str("/.snapshots/ast/fstree") # Path to fstree file
-    efi = get_efi()
     fstree = importer.import_(import_tree_file("/.snapshots/ast/fstree")) # Import fstree file
     # Recognize argument and call appropriate function
     for arg in args:

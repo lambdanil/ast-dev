@@ -67,7 +67,7 @@ def main(args):
     if efi:
         os.system("mkdir /mnt/boot/efi")
         os.system(f"mount {args[3]} /mnt/boot/efi")
-    os.system("pacstrap /mnt base linux linux-firmware nano python3 python-anytree dhcpcd btrfs-progs networkmanager grub")
+    os.system("pacstrap /mnt base linux linux-firmware nano python3 python-anytree dhcpcd arch-install-scripts btrfs-progs networkmanager grub")
     if efi:
         os.system("pacstrap /mnt efibootmgr")
     mntdirs_n = mntdirs
@@ -80,7 +80,6 @@ def main(args):
     os.system("echo '/.snapshots/ast/root /root none bind 0 0' >> /mnt/etc/fstab")
     os.system("echo '/.snapshots/ast/tmp /tmp none bind 0 0' >> /mnt/etc/fstab")
     astpart = to_uuid(args[1])
-    os.system(f"echo '{astpart}' > /mnt/.snapshots/ast/part")
     os.system(f"mkdir -p /mnt/usr/share/ast/db")
     os.system(f"echo '0' > /mnt/usr/share/ast/snap")
 
@@ -147,6 +146,7 @@ def main(args):
     os.system("btrfs sub snap -r /mnt/.snapshots/var/var-tmp /mnt/.snapshots/var/var-0")
     os.system("btrfs sub snap -r /mnt/.snapshots/boot/boot-tmp /mnt/.snapshots/boot/boot-0")
     os.system("btrfs sub snap -r /mnt/.snapshots/etc/etc-tmp /mnt/.snapshots/etc/etc-0")
+    os.system(f"echo '{astpart}' > /mnt/.snapshots/ast/part")
     if DesktopInstall == 1:
         os.system(f"echo '1' > /mnt/usr/share/ast/snap")
         os.system("pacstrap /mnt flatpak gnome gnome-extra gnome-themes-extra gdm pipewire pipewire-pulse sudo")
@@ -259,9 +259,9 @@ def main(args):
     os.system("rm -rf /mnt/root/*")
     os.system("rm -rf /mnt/tmp/*")
 #    os.system("umount /mnt/var")
-    os.system("umount /mnt/boot")
     if efi:
         os.system("umount /mnt/boot/efi")
+    os.system("umount /mnt/boot")
 #    os.system("mkdir /mnt/.snapshots/var/var-tmp")
 #    os.system("mkdir /mnt/.snapshots/boot/boot-tmp")
 #    os.system(f"mount {args[1]} -o subvol=@var,compress=zstd,noatime /mnt/.snapshots/var/var-tmp")
