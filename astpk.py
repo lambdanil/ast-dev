@@ -457,7 +457,7 @@ def install(snapshot,pkg):
     else:
         prepare(snapshot)
         excode = str(os.system(f"chroot /.snapshots/rootfs/snapshot-chr{snapshot} pacman -S {pkg} --overwrite '/var/*'"))
-        if "1" not in excode:
+        if int(excode) == 0:
             posttrans(snapshot)
             print(f"snapshot {snapshot} updated successfully")
         else:
@@ -472,7 +472,7 @@ def remove(snapshot,pkg):
     else:
         prepare(snapshot)
         excode = str(os.system(f"chroot /.snapshots/rootfs/snapshot-chr{snapshot} pacman --noconfirm -Rns {pkg}"))
-        if "1" not in excode:
+        if int(excode) == 0:
             posttrans(snapshot)
             print(f"snapshot {snapshot} updated successfully")
         else:
@@ -581,7 +581,7 @@ def upgrade(snapshot):
     else:
         prepare(snapshot)
         excode = str(os.system(f"chroot /.snapshots/rootfs/snapshot-chr{snapshot} pacman -Syyu")) # Default upgrade behaviour is now "safe" update, meaning failed updates get fully discarded
-        if "1" not in excode:
+        if int(excode) == 0:
             posttrans(snapshot)
             print(f"snapshot {snapshot} updated successfully")
         else:
@@ -591,7 +591,7 @@ def upgrade(snapshot):
 def autoupgrade(snapshot):
     prepare(snapshot)
     excode = str(os.system(f"chroot /.snapshots/rootfs/snapshot-chr{snapshot} pacman --noconfirm -Syyu"))
-    if "1" not in excode:
+    if int(excode) == 0:
         posttrans(snapshot)
         os.system("echo 0 > /.snapshots/ast/upstate")
         os.system("echo $(date) >> /.snapshots/ast/upstate")
@@ -745,7 +745,10 @@ def main(args):
             print("Please don't use ast inside a chroot")
             break
         if arg == "new-tree" or arg == "new":
-            new_snapshot()
+            args_2 = args
+            args_2.remove(args_2[0])
+            args_2.remove(args_2[0])
+            new_snapshot(str(" ").join(args_2))
         elif arg == "boot-update" or arg == "boot":
             update_boot(args[args.index(arg)+1])
         elif arg == "chroot" or arg == "cr" and (lock != True):
@@ -763,8 +766,9 @@ def main(args):
             args_2.remove(args_2[0])
             live = False
             if args_2[0] == "--live":
-                live = True
                 args_2.remove(args_2[0])
+                if args_2[0] == get_snapshot():
+                    live = True
             csnapshot = args_2[0]
             args_2.remove(args_2[0])
             install(csnapshot, str(" ").join(args_2))
@@ -807,6 +811,7 @@ def main(args):
         elif arg == "rm-snapshot" or arg == "del":
             delete(args[args.index(arg)+1])
         elif arg == "remove" and (lock != True):
+            ast_lock()
             args_2 = args
             args_2.remove(args_2[0])
             args_2.remove(args_2[0])
