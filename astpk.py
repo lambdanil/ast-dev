@@ -766,7 +766,10 @@ def main(args):
             print("Please don't use ast inside a chroot")
             break
         if arg == "new-tree" or arg == "new":
-            new_snapshot()
+            args_2 = args
+            args_2.remove(args_2[0])
+            args_2.remove(args_2[0])
+            new_snapshot(str(" ").join(args_2))
         elif arg == "boot-update" or arg == "boot":
             update_boot(args[args.index(arg)+1])
         elif arg == "chroot" or arg == "cr" and (lock != True):
@@ -828,6 +831,7 @@ def main(args):
         elif arg == "rm-snapshot" or arg == "del":
             delete(args[args.index(arg)+1])
         elif arg == "remove" and (lock != True):
+            ast_lock()
             args_2 = args
             args_2.remove(args_2[0])
             args_2.remove(args_2[0])
