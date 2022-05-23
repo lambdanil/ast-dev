@@ -786,11 +786,10 @@ def main(args):
             args_2.remove(args_2[0])
             args_2.remove(args_2[0])
             live = False
-            if len(args_2) > 1:
-                if (os.path.exists(f"/.snapshots/rootfs/snapshot-{args_2[1]}")):
-                    if args_2[0] == "--live" and (subprocess.check_output(f"cat /.snapshots/rootfs/snapshot-{get_tmp()}/usr/share/ast/snap", shell=True) == subprocess.check_output(f"cat /.snapshots/rootfs/snapshot-{args_2[1]}/usr/share/ast/snap", shell=True)):
-                        live = True
-                        args_2.remove(args_2[0])
+            if args_2[0] == "--live":
+                args_2.remove(args_2[0])
+                if args_2[0] == get_snapshot():
+                    live = True
             csnapshot = args_2[0]
             args_2.remove(args_2[0])
             install(csnapshot, str(" ").join(args_2))
