@@ -54,7 +54,7 @@ def main(args):
 #    efi = False #
     os.system(f"mount {args[1]} /mnt")
     btrdirs = ["@","@.snapshots","@home","@var","@etc","@boot"]
-    mntdirs = ["",".snapshots","home","var","etc","boot"]
+    mntdirs = ["",".snapshots","home","var","etc"]
     for btrdir in btrdirs:
         os.system(f"btrfs sub create /mnt/{btrdir}")
     os.system(f"umount /mnt")
@@ -138,6 +138,7 @@ def main(args):
 #    os.system("cp --reflink=auto -r /mnt/var/* /mnt/.snapshots/var/var-tmp")
     os.system("mkdir -p /mnt/.snapshots/var/var-tmp/lib/{pacman,systemd}")
     os.system("cp --reflink=auto -r /mnt/var/lib/pacman/* /mnt/.snapshots/var/var-tmp/lib/pacman/")
+    os.system("cp --reflink=auto -r /mnt/boot/* /mnt/.snapshots/rootfs/snapshot-0/boot/")
     os.system("cp --reflink=auto -r /mnt/var/lib/systemd/* /mnt/.snapshots/var/var-tmp/lib/systemd/")
     os.system("cp --reflink=auto -r /mnt/etc/* /mnt/.snapshots/etc/etc-tmp")
     os.system("btrfs sub snap -r /mnt/.snapshots/var/var-tmp /mnt/.snapshots/var/var-0")
@@ -242,6 +243,8 @@ def main(args):
     else:
         os.system("btrfs sub snap /mnt/.snapshots/rootfs/snapshot-0 /mnt/.snapshots/rootfs/snapshot-tmp")
 
+    if DesktopInstall:
+        os.system("cp --reflink=auto -r /mnt/boot/* /mnt/.snapshots/rootfs/snapshot-1/boot/")
     os.system("cp -r /mnt/root/* /mnt/.snapshots/root/")
     os.system("cp -r /mnt/root/* /mnt/.snapshots/tmp/")
     os.system("rm -rf /mnt/root/*")
