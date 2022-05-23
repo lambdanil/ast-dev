@@ -787,7 +787,7 @@ def main(args):
             args_2.remove(args_2[0])
             live = False
             if len(args_2) > 1:
-                if args_2[0] == "--live" and args_2[1] == get_snapshot():
+                if args_2[0] == "--live" and int(args_2[1]) == int(get_snapshot().replace('\n',"")):
                     live = True
                     args_2.remove(args_2[0])
             csnapshot = args_2[0]
