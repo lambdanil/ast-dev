@@ -467,7 +467,7 @@ def install(snapshot,pkg):
     else:
         prepare(snapshot)
         excode = str(os.system(f"chroot /.snapshots/rootfs/snapshot-chr{snapshot} pacman -S {pkg} --overwrite '/var/*'"))
-        if "1" not in excode:
+        if int(excode) == 0:
             posttrans(snapshot)
             print(f"snapshot {snapshot} updated successfully")
         else:
@@ -482,7 +482,7 @@ def remove(snapshot,pkg):
     else:
         prepare(snapshot)
         excode = str(os.system(f"chroot /.snapshots/rootfs/snapshot-chr{snapshot} pacman --noconfirm -Rns {pkg}"))
-        if "1" not in excode:
+        if int(excode) == 0:
             posttrans(snapshot)
             print(f"snapshot {snapshot} updated successfully")
         else:
@@ -599,7 +599,7 @@ def upgrade(snapshot):
     else:
         prepare(snapshot)
         excode = str(os.system(f"chroot /.snapshots/rootfs/snapshot-chr{snapshot} pacman -Syyu")) # Default upgrade behaviour is now "safe" update, meaning failed updates get fully discarded
-        if "1" not in excode:
+        if int(excode) == 0:
             posttrans(snapshot)
             print(f"snapshot {snapshot} updated successfully")
         else:
@@ -609,7 +609,7 @@ def upgrade(snapshot):
 def autoupgrade(snapshot):
     prepare(snapshot)
     excode = str(os.system(f"chroot /.snapshots/rootfs/snapshot-chr{snapshot} pacman --noconfirm -Syyu"))
-    if "1" not in excode:
+    if int(excode) == 0:
         posttrans(snapshot)
         os.system("echo 0 > /.snapshots/ast/upstate")
         os.system("echo $(date) >> /.snapshots/ast/upstate")
