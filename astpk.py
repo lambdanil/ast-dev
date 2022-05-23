@@ -786,9 +786,10 @@ def main(args):
             args_2.remove(args_2[0])
             args_2.remove(args_2[0])
             live = False
-            if args_2[0] == "--live":
-                live = True
-                args_2.remove(args_2[0])
+            if len(args_2) > 1:
+                if args_2[0] == "--live" and args_2[1] == get_snapshot():
+                    live = True
+                    args_2.remove(args_2[0])
             csnapshot = args_2[0]
             args_2.remove(args_2[0])
             install(csnapshot, str(" ").join(args_2))
