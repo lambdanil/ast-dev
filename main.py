@@ -141,6 +141,9 @@ def main(args):
     os.system("cp --reflink=auto -r /mnt/boot/* /mnt/.snapshots/rootfs/snapshot-0/boot/")
     os.system("cp --reflink=auto -r /mnt/var/lib/systemd/* /mnt/.snapshots/var/var-tmp/lib/systemd/")
     os.system("cp --reflink=auto -r /mnt/etc/* /mnt/.snapshots/etc/etc-tmp")
+    os.system(f"mount {args[2]} -o subvol=@boot /mnt/boot")
+    os.system(f"cp -r /mnt/.snapshots/rootfs/snapshot-0/boot/grub/ /mnt/boot/")
+    os.system(f"umount /mnt/boot")
     os.system("btrfs sub snap -r /mnt/.snapshots/var/var-tmp /mnt/.snapshots/var/var-0")
     os.system("btrfs sub snap -r /mnt/.snapshots/etc/etc-tmp /mnt/.snapshots/etc/etc-0")
     os.system(f"echo '{astpart}' > /mnt/.snapshots/ast/part")
@@ -245,6 +248,9 @@ def main(args):
 
     if DesktopInstall:
         os.system("cp --reflink=auto -r /mnt/boot/* /mnt/.snapshots/rootfs/snapshot-1/boot/")
+        os.system(f"mount {args[2]} -o subvol=@boot /mnt/boot")
+        os.system(f"cp -r /mnt/.snapshots/rootfs/snapshot-1/boot/grub/ /mnt/boot/")
+        os.system(f"umount /mnt/boot")
     os.system("cp -r /mnt/root/* /mnt/.snapshots/root/")
     os.system("cp -r /mnt/root/* /mnt/.snapshots/tmp/")
     os.system("rm -rf /mnt/root/*")
