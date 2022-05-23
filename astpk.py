@@ -788,7 +788,7 @@ def main(args):
             live = False
             if len(args_2) > 1:
                 if (os.path.exists(f"/.snapshots/rootfs/snapshot-{args_2[1]}")):
-                    if args_2[0] == "--live" and (subprocess.check_output(f"cat /.snapshots/rootfs/snapshot-{get_tmp()}", shell=True) == subprocess.check_output(f"cat /.snapshots/rootfs/snapshot-{args_2[1]}", shell=True)):
+                    if args_2[0] == "--live" and (subprocess.check_output(f"cat /.snapshots/rootfs/snapshot-{get_tmp()}/usr/share/ast/snap", shell=True) == subprocess.check_output(f"cat /.snapshots/rootfs/snapshot-{args_2[1]}/usr/share/ast/snap", shell=True)):
                         live = True
                         args_2.remove(args_2[0])
             csnapshot = args_2[0]
