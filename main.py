@@ -1,284 +1,901 @@
 #!/usr/bin/python3
-import os
-import time
 import sys
+import ast # Heh funny name coincidence with project name
 import subprocess
-
-# TODO: the installer needs a proper rewrite
+from anytree.importer import DictImporter
+from anytree.exporter import DictExporter
+import anytree
+import os
+import re
 
 args = list(sys.argv)
 
-def clear():
-    os.system("clear")
+# TODO ------------
+# General code cleanup
+# Maybe port for other distros?
+# A clean way to completely unistall ast
+# -----------------
 
-def to_uuid(part):
-    uuid = str(subprocess.check_output(f"blkid -s UUID -o value {part}", shell=True))
-    return uuid.replace("b'","").replace('"',"").replace("\\n'","")
+# Directories
+# All images share one /var
+# global boot is always at @boot
+# *-tmp - temporary directories used to boot deployed image
+# *-chr - temporary directories used to chroot into image or copy images around
+# /.snapshots/var/var-* == individual /var for each image
+# /.snapshots/etc/etc-* == individual /etc for each image
+# /.snapshots/boot/boot-* == individual /boot for each image
+# /.snapshots/rootfs/snapshot-* == images
+# /root/images/*-desc == descriptions
+# /usr/share/ast == files that store current snapshot info
+# /usr/share/ast/db == package database
+# /var/lib/ast(/fstree) == ast files, stores fstree, symlink to /.snapshots/ast
 
+# Import filesystem tree file in this function
+def import_tree_file(treename):
+    treefile = open(treename,"r")
+    tree = ast.literal_eval(treefile.readline())
+    return(tree)
+
+# Print out tree with descriptions
+def print_tree(tree):
+    snapshot = get_snapshot()
+    for pre, fill, node in anytree.RenderTree(tree):
+        if os.path.isfile(f"/.snapshots/ast/images/{node.name}-desc"):
+            descfile = open(f"/.snapshots/ast/images/{node.name}-desc","r")
+            desc = descfile.readline()
+            descfile.close()
+        else:
+            desc = ""
+        if str(node.name) == "0":
+            desc = "base image"
+        if snapshot != str(node.name):
+            print("%s%s - %s" % (pre, node.name, desc))
+        else:
+            print("%s%s*- %s" % (pre, node.name, desc))
+
+# Write new description
+def write_desc(snapshot, desc):
+    os.system(f"touch /.snapshots/ast/images/{snapshot}-desc")
+    descfile = open(f"/.snapshots/ast/images/{snapshot}-desc","w")
+    descfile.write(desc)
+    descfile.close()
+
+# Add to root tree
+def append_base_tree(tree,val):
+    add = anytree.Node(val, parent=tree.root)
+
+# Add child to node
+def add_node_to_parent(tree, id, val):
+    par = (anytree.find(tree, filter_=lambda node: ("x"+str(node.name)+"x") in ("x"+str(id)+"x"))) 
+    add = anytree.Node(val, parent=par)
+
+# Clone within node
+def add_node_to_level(tree,id, val): 
+    npar = get_parent(tree, id)
+    par = (anytree.find(tree, filter_=lambda node: ("x"+str(node.name)+"x") in ("x"+str(npar)+"x")))
+    add = anytree.Node(val, parent=par)
+
+# Remove node from tree
+def remove_node(tree, id):
+    par = (anytree.find(tree, filter_=lambda node: ("x"+str(node.name)+"x") in ("x"+str(id)+"x")))
+    par.parent = None
+
+# Save tree to file
+def write_tree(tree):
+    exporter = DictExporter()
+    to_write = exporter.export(tree)
+    fsfile = open(fstreepath,"w")
+    fsfile.write(str(to_write))
+
+# Get parent
+def get_parent(tree, id):
+    par = (anytree.find(tree, filter_=lambda node: ("x"+str(node.name)+"x") in ("x"+str(id)+"x")))
+    return(par.parent.name)
+
+# Return all children for node
+def return_children(tree, id):
+    children = []
+    par = (anytree.find(tree, filter_=lambda node: ("x"+str(node.name)+"x") in ("x"+str(id)+"x")))
+    for child in anytree.PreOrderIter(par):
+        children.append(child.name)
+    if id in children:
+        children.remove(id)
+    return (children)
+
+# Return order to recurse tree
+def recurstree(tree, cid):
+    order = []
+    for child in (return_children(tree,cid)):
+        par = get_parent(tree, child)
+        if child != cid:
+            order.append(par)
+            order.append(child)
+    return (order)
+
+# Get current snapshot
+def get_snapshot():
+    csnapshot = open("/usr/share/ast/snap","r")
+    snapshot = csnapshot.readline()
+    csnapshot.close()
+    snapshot = snapshot.replace('\n',"")
+    return(snapshot)
+
+# Get drive partition
+def get_part():
+    cpart = open("/.snapshots/ast/part","r")
+    uuid = cpart.readline().replace('\n',"")
+    cpart.close()
+    part = str(subprocess.check_output(f"blkid | grep '{uuid}' | awk '{{print $1}}'", shell=True))
+    return(part.replace(":","").replace("b'","").replace("\\n'",""))
+
+# Get tmp partition state
+def get_tmp():
+    mount = str(subprocess.check_output("mount | grep 'on / type'", shell=True))
+    if "tmp0" in mount:
+        return("tmp0")
+    else:
+        return("tmp")
+
+# Deploy image
+def deploy(snapshot):
+    if not (os.path.exists(f"/.snapshots/rootfs/snapshot-{snapshot}")):
+        print("cannot deploy, snapshot doesn't exist")
+    else:
+        update_boot(snapshot)
+        tmp = get_tmp()
+        os.system(f"btrfs sub set-default /.snapshots/rootfs/snapshot-{tmp} >/dev/null 2>&1") # Set default volume
+        untmp()
+        if "tmp0" in tmp:
+            tmp = "tmp"
+        else:
+            tmp = "tmp0"
+        etc = snapshot
+        os.system(f"btrfs sub snap /.snapshots/rootfs/snapshot-{snapshot} /.snapshots/rootfs/snapshot-{tmp} >/dev/null 2>&1")
+        os.system(f"btrfs sub snap /.snapshots/etc/etc-{snapshot} /.snapshots/etc/etc-{tmp} >/dev/null 2>&1")
+        os.system(f"btrfs sub create /.snapshots/var/var-{tmp} >/dev/null 2>&1")
+        os.system(f"cp --reflink=auto -r /.snapshots/var/var-{etc}/* /.snapshots/var/var-{tmp} >/dev/null 2>&1")
+        os.system(f"btrfs sub snap /.snapshots/boot/boot-{snapshot} /.snapshots/boot/boot-{tmp} >/dev/null 2>&1")
+        os.system(f"mkdir /.snapshots/rootfs/snapshot-{tmp}/etc >/dev/null 2>&1")
+        os.system(f"rm -rf /.snapshots/rootfs/snapshot-{tmp}/var >/dev/null 2>&1")
+        os.system(f"mkdir /.snapshots/rootfs/snapshot-{tmp}/boot >/dev/null 2>&1")
+        os.system(f"cp --reflink=auto -r /.snapshots/etc/etc-{etc}/* /.snapshots/rootfs/snapshot-{tmp}/etc >/dev/null 2>&1")
+        os.system(f"btrfs sub snap /var /.snapshots/rootfs/snapshot-{tmp}/var >/dev/null 2>&1")
+        os.system(f"cp --reflink=auto -r /.snapshots/boot/boot-{etc}/* /.snapshots/rootfs/snapshot-{tmp}/boot >/dev/null 2>&1")
+        os.system(f"echo '{snapshot}' > /.snapshots/rootfs/snapshot-{tmp}/usr/share/ast/snap")
+        switchtmp()
+        #os.system(f"rm -rf /var/lib/pacman/* >/dev/null 2>&1") # Clean pacman and systemd directories before copy
+        os.system(f"rm -rf /var/lib/systemd/* >/dev/null 2>&1")
+        os.system(f"rm -rf /.snapshots/rootfs/snapshot-{tmp}/var/lib/systemd/* >/dev/null 2>&1")
+        #os.system(f"rm -rf /.snapshots/rootfs/snapshot-{tmp}/var/lib/pacman/* >/dev/null 2>&1")
+        os.system(f"cp --reflink=auto -r /.snapshots/var/var-{etc}/* /.snapshots/rootfs/snapshot-{tmp}/var/ >/dev/null 2>&1")
+        #os.system(f"cp --reflink=auto -r /.snapshots/var/var-{etc}/lib/pacman/* /var/lib/pacman/ >/dev/null 2>&1") # Copy pacman and systemd directories
+        os.system(f"cp --reflink=auto -r /.snapshots/var/var-{etc}/lib/systemd/* /var/lib/systemd/ >/dev/null 2>&1")
+        #os.system(f"cp --reflink=auto -r /.snapshots/var/var-{etc}/lib/pacman/* /.snapshots/rootfs/snapshot-{tmp}/var/lib/pacman/")
+        os.system(f"cp --reflink=auto -r /.snapshots/var/var-{etc}/lib/systemd/* /.snapshots/rootfs/snapshot-{tmp}/var/lib/systemd/ >/dev/null 2>&1")
+        os.system(f"btrfs sub set-default /.snapshots/rootfs/snapshot-{tmp}") # Set default volume
+        #os.system(f"chattr -RV +i /.snapshots/rootfs/snapshot-{tmp}/usr > /dev/null 2>&1")
+        print(f"{snapshot} was deployed to /")
+
+# Add node to branch
+def extend_branch(snapshot, desc=""):
+    if not (os.path.exists(f"/.snapshots/rootfs/snapshot-{snapshot}")):
+        print("cannot branch, snapshot doesn't exist")
+    else:
+        i = findnew()
+        os.system(f"btrfs sub snap -r /.snapshots/rootfs/snapshot-{snapshot} /.snapshots/rootfs/snapshot-{i} >/dev/null 2>&1")
+        os.system(f"btrfs sub snap -r /.snapshots/etc/etc-{snapshot} /.snapshots/etc/etc-{i} >/dev/null 2>&1")
+        os.system(f"btrfs sub snap -r /.snapshots/var/var-{snapshot} /.snapshots/var/var-{i} >/dev/null 2>&1")
+        os.system(f"btrfs sub snap -r /.snapshots/boot/boot-{snapshot} /.snapshots/boot/boot-{i} >/dev/null 2>&1")
+        add_node_to_parent(fstree,snapshot,i)
+        write_tree(fstree)
+        if desc: write_desc(i, desc)
+        print(f"branch {i} added to {snapshot}")
+
+# Clone branch under same parent,
+def clone_branch(snapshot):
+    if not (os.path.exists(f"/.snapshots/rootfs/snapshot-{snapshot}")):
+        print("cannot clone, snapshot doesn't exist")
+    else:
+        i = findnew()
+        os.system(f"btrfs sub snap -r /.snapshots/rootfs/snapshot-{snapshot} /.snapshots/rootfs/snapshot-{i} >/dev/null 2>&1")
+        os.system(f"btrfs sub snap -r /.snapshots/etc/etc-{snapshot} /.snapshots/etc/etc-{i} >/dev/null 2>&1")
+        os.system(f"btrfs sub snap -r /.snapshots/var/var-{snapshot} /.snapshots/var/var-{i} >/dev/null 2>&1")
+        os.system(f"btrfs sub snap -r /.snapshots/boot/boot-{snapshot} /.snapshots/boot/boot-{i} >/dev/null 2>&1")
+        add_node_to_level(fstree,snapshot,i)
+        write_tree(fstree)
+        desc = str(f"clone of {snapshot}")
+        write_desc(i, desc)
+        print(f"branch {i} added to parent of {snapshot}")
+
+# Clone under specified parent
+def clone_under(snapshot, branch):
+    if not (os.path.exists(f"/.snapshots/rootfs/snapshot-{snapshot}")) or (not(os.path.exists(f"/.snapshots/rootfs/snapshot-{branch}"))):
+        print("cannot clone, snapshot doesn't exist")
+    else:
+        i = findnew()
+        os.system(f"btrfs sub snap -r /.snapshots/rootfs/snapshot-{branch} /.snapshots/rootfs/snapshot-{i} >/dev/null 2>&1")
+        os.system(f"btrfs sub snap -r /.snapshots/etc/etc-{branch} /.snapshots/etc/etc-{i} >/dev/null 2>&1")
+        os.system(f"btrfs sub snap -r /.snapshots/var/var-{branch} /.snapshots/var/var-{i} >/dev/null 2>&1")
+        os.system(f"btrfs sub snap -r /.snapshots/boot/boot-{branch} /.snapshots/boot/boot-{i} >/dev/null 2>&1")
+        add_node_to_parent(fstree,snapshot,i)
+        write_tree(fstree)
+        desc = str(f"clone of {snapshot}")
+        write_desc(i, desc)
+        print(f"branch {i} added to {snapshot}")
+
+# Lock ast
+def ast_lock():
+    os.system("touch /.snapshots/ast/lock-disable")
+
+# Unlock
+def ast_unlock():
+    os.system("rm -rf /.snapshots/ast/lock")
+
+def get_lock():
+    if os.path.exists("/.snapshots/ast/lock"):
+        return(True)
+    else:
+        return(False)
+
+# Recursively remove package in tree
+def remove_from_tree(tree,treename,pkg):
+    if not (os.path.exists(f"/.snapshots/rootfs/snapshot-{treename}")):
+        print("cannot update, tree doesn't exist")
+    else:
+        remove(treename, pkg)
+        order = recurstree(tree, treename)
+        if len(order) > 2:
+            order.remove(order[0])
+            order.remove(order[0])
+        while True:
+            if len(order) < 2:
+                break
+            arg = order[0]
+            sarg = order[1]
+            print(arg,sarg)
+            order.remove(order[0])
+            order.remove(order[0])
+            remove(sarg,pkg)
+        print(f"tree {treename} was updated")
+
+# Recursively run an update in tree
+def update_tree(tree,treename):
+    if not (os.path.exists(f"/.snapshots/rootfs/snapshot-{treename}")):
+        print("cannot update, tree doesn't exist")
+    else:
+        upgrade(treename)
+        order = recurstree(tree, treename)
+        if len(order) > 2:
+            order.remove(order[0])
+            order.remove(order[0])
+        while True:
+            if len(order) < 2:
+                break
+            arg = order[0]
+            sarg = order[1]
+            print(arg,sarg)
+            order.remove(order[0])
+            order.remove(order[0])
+            autoupgrade(sarg)
+        print(f"tree {treename} was updated")
+
+# Recursively run an update in tree
+def run_tree(tree,treename,cmd):
+    if not (os.path.exists(f"/.snapshots/rootfs/snapshot-{treename}")):
+        print("cannot update, tree doesn't exist")
+    else:
+        prepare(treename)
+        os.system(f"chroot /.snapshots/rootfs/snapshot-chr{treename} {cmd}")
+        posttrans(treename)
+        order = recurstree(tree, treename)
+        if len(order) > 2:
+            order.remove(order[0])
+            order.remove(order[0])
+        while True:
+            if len(order) < 2:
+                break
+            arg = order[0]
+            sarg = order[1]
+            print(arg,sarg)
+            order.remove(order[0])
+            order.remove(order[0])
+            prepare(sarg)
+            os.system(f"chroot /.snapshots/rootfs/snapshot-chr{sarg} {cmd}")
+            posttrans(sarg)
+        print(f"tree {treename} was updated")
+
+# Sync tree and all it's snapshots
+def sync_tree(tree,treename,forceOffline):
+    if not (os.path.exists(f"/.snapshots/rootfs/snapshot-{treename}")):
+        print("cannot sync, tree doesn't exist")
+    else:
+        if not forceOffline: # Syncing tree automatically updates it, unless 'force-sync' is used
+            update_tree(tree, treename)
+        order = recurstree(tree, treename)
+        if len(order) > 2:
+            order.remove(order[0])
+            order.remove(order[0])
+        while True:
+            if len(order) < 2:
+                break
+            arg = order[0]
+            sarg = order[1]
+            print(arg,sarg)
+            order.remove(order[0])
+            order.remove(order[0])
+            prepare(sarg)
+            #os.system(f"cp --reflink=auto -r /.snapshots/var/var-{arg}/lib/pacman/local/* /.snapshots/var/var-chr{sarg}/lib/pacman/local/ >/dev/null 2>&1")
+            os.system(f"cp --reflink=auto -r /.snapshots/var/var-{arg}/lib/systemd/* /.snapshots/var/var-chr{sarg}/lib/systemd/ >/dev/null 2>&1")
+            #os.system(f"cp --reflink=auto -r /.snapshots/var/var-{arg}/lib/pacman/local/* /.snapshots/rootfs/snapshot-chr{sarg}/var/lib/pacman/local/ >/dev/null 2>&1")
+            os.system(f"cp --reflink=auto -r /.snapshots/var/var-{arg}/lib/systemd/* /.snapshots/rootfs/snapshot-chr{sarg}/var/lib/systemd/ >/dev/null 2>&1")
+            os.system(f"cp --reflink=auto -n -r /.snapshots/rootfs/snapshot-{arg}/* /.snapshots/rootfs/snapshot-chr{sarg}/ >/dev/null 2>&1")
+            posttrans(sarg)
+        print(f"tree {treename} was synced")
+
+# Clone tree
+def clone_as_tree(snapshot):
+    if not (os.path.exists(f"/.snapshots/rootfs/snapshot-{snapshot}")):
+        print("cannot clone, snapshot doesn't exist")
+    else:
+        i = findnew()
+        os.system(f"btrfs sub snap -r /.snapshots/rootfs/snapshot-{snapshot} /.snapshots/rootfs/snapshot-{i} >/dev/null 2>&1")
+        os.system(f"btrfs sub snap -r /.snapshots/etc/etc-{snapshot} /.snapshots/etc/etc-{i} >/dev/null 2>&1")
+        os.system(f"btrfs sub snap -r /.snapshots/var/var-{snapshot} /.snapshots/var/var-{i} >/dev/null 2>&1")
+        os.system(f"btrfs sub snap -r /.snapshots/boot/boot-{snapshot} /.snapshots/boot/boot-{i} >/dev/null 2>&1")
+        append_base_tree(fstree,i)
+        write_tree(fstree)
+        desc = str(f"clone of {snapshot}")
+        write_desc(i, desc)
+        print(f"tree {i} cloned from {snapshot}")
+
+# Creates new tree from base file
+def new_snapshot(desc=""):
+    i = findnew()
+    os.system(f"btrfs sub snap -r /.snapshots/rootfs/snapshot-0 /.snapshots/rootfs/snapshot-{i} >/dev/null 2>&1")
+    os.system(f"btrfs sub snap -r /.snapshots/etc/etc-0 /.snapshots/etc/etc-{i} >/dev/null 2>&1")
+    os.system(f"btrfs sub snap -r /.snapshots/boot/boot-0 /.snapshots/boot/boot-{i} >/dev/null 2>&1")
+    os.system(f"btrfs sub snap -r /.snapshots/var/var-0 /.snapshots/var/var-{i} >/dev/null 2>&1")
+    append_base_tree(fstree,i)
+    write_tree(fstree)
+    if desc: write_desc(i, desc)
+    print(f"new tree {i} created")
+
+# Calls print function
+def show_fstree():
+    print_tree(fstree)
+
+# Saves changes made to /etc to image
+def update_etc():
+    tmp = get_tmp()
+    snapshot = get_snapshot()
+    os.system(f"btrfs sub del /.snapshots/etc/etc-{snapshot} >/dev/null 2>&1")
+    os.system(f"btrfs sub snap -r /.snapshots/etc/etc-{tmp} /.snapshots/etc/etc-{snapshot} >/dev/null 2>&1")
+
+# Update boot
+def update_boot(snapshot):
+    if not (os.path.exists(f"/.snapshots/rootfs/snapshot-{snapshot}")):
+        print("cannot update boot, snapshot doesn't exist")
+    else:
+        tmp = get_tmp()
+        part = get_part()
+        prepare(snapshot)
+        os.system(f"chroot /.snapshots/rootfs/snapshot-chr{snapshot} grub-mkconfig {part} -o /boot/grub/grub.cfg")
+        os.system(f"chroot /.snapshots/rootfs/snapshot-chr{snapshot} sed -i s,snapshot-chr{snapshot},snapshot-{tmp},g /boot/grub/grub.cfg")
+        os.system(f"chroot /.snapshots/rootfs/snapshot-chr{snapshot} sed -i '0,/astOS\ Linux/s//astOS\ Linux\ snapshot\ {snapshot}/' /boot/grub/grub.cfg")
+        posttrans(snapshot)
+
+# Chroot into snapshot
+def chroot(snapshot):
+    if not (os.path.exists(f"/.snapshots/rootfs/snapshot-{snapshot}")):
+        print("cannot chroot, snapshot doesn't exist")
+    elif snapshot == "0":
+        print("changing base image is not allowed")
+    else:
+        prepare(snapshot)
+        os.system(f"chroot /.snapshots/rootfs/snapshot-chr{snapshot}")
+        posttrans(snapshot)
+
+# Run command in snapshot
+def chrrun(snapshot,cmd):
+    if not (os.path.exists(f"/.snapshots/rootfs/snapshot-{snapshot}")):
+        print("cannot chroot, snapshot doesn't exist")
+    elif snapshot == "0":
+        print("changing base image is not allowed")
+    else:
+        prepare(snapshot)
+        os.system(f"chroot /.snapshots/rootfs/snapshot-chr{snapshot} {cmd}")
+        posttrans(snapshot)
+
+# Clean chroot mount dirs
+def unchr(snapshot):
+    os.system(f"btrfs sub del /.snapshots/etc/etc-chr{snapshot} >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.snapshots/var/var-chr{snapshot} >/dev/null 2>&1")
+    os.system(f"rm -rf /.snapshots/var/var-chr{snapshot} >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.snapshots/boot/boot-chr{snapshot} >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.snapshots/rootfs/snapshot-chr{snapshot}/* >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.snapshots/rootfs/snapshot-chr{snapshot} >/dev/null 2>&1")
+
+# Clean tmp dirs
+def untmp():
+    tmp = get_tmp()
+    if "tmp0" in tmp:
+        tmp = "tmp"
+    else:
+        tmp = "tmp0"
+    os.system(f"btrfs sub del /.snapshots/rootfs/snapshot-{tmp}/* >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.snapshots/rootfs/snapshot-{tmp} >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.snapshots/etc/etc-{tmp} >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.snapshots/var/var-{tmp} >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.snapshots/boot/boot-{tmp} >/dev/null 2>&1")
+
+# Install live
+def live_install(pkg):
+    tmp = get_tmp()
+    part = get_part()
+    #os.system(f"chattr -RV -i /.snapshots/rootfs/snapshot-{tmp}/usr > /dev/null 2>&1")
+    os.system(f"mount --bind /.snapshots/rootfs/snapshot-{tmp} /.snapshots/rootfs/snapshot-{tmp} > /dev/null 2>&1")
+    os.system(f"mount --bind /home /.snapshots/rootfs/snapshot-{tmp}/home > /dev/null 2>&1")
+    os.system(f"mount --bind /var /.snapshots/rootfs/snapshot-{tmp}/var > /dev/null 2>&1")
+    os.system(f"mount --bind /etc /.snapshots/rootfs/snapshot-{tmp}/etc > /dev/null 2>&1")
+    os.system(f"mount --bind /tmp /.snapshots/rootfs/snapshot-{tmp}/tmp > /dev/null 2>&1")
+    os.system(f"arch-chroot /.snapshots/rootfs/snapshot-{tmp} pacman -S  --overwrite \\* --noconfirm {pkg}")
+    os.system(f"umount /.snapshots/rootfs/snapshot-{tmp}/* > /dev/null 2>&1")
+    os.system(f"umount /.snapshots/rootfs/snapshot-{tmp} > /dev/null 2>&1")
+    #os.system(f"chattr -RV +i /.snapshots/rootfs/snapshot-{tmp}/usr > /dev/null 2>&1")
+
+# Live unlocked shell
+def live_unlock():
+    tmp = get_tmp()
+    part = get_part()
+    #os.system(f"chattr -RV -i /.snapshots/rootfs/snapshot-{tmp}/usr > /dev/null 2>&1")
+    os.system(f"mount --bind /.snapshots/rootfs/snapshot-{tmp} /.snapshots/rootfs/snapshot-{tmp} > /dev/null 2>&1")
+    os.system(f"mount --bind /home /.snapshots/rootfs/snapshot-{tmp}/home > /dev/null 2>&1")
+    os.system(f"mount --bind /var /.snapshots/rootfs/snapshot-{tmp}/var > /dev/null 2>&1")
+    os.system(f"mount --bind /etc /.snapshots/rootfs/snapshot-{tmp}/etc > /dev/null 2>&1")
+    os.system(f"mount --bind /tmp /.snapshots/rootfs/snapshot-{tmp}/tmp > /dev/null 2>&1")
+    os.system(f"arch-chroot /.snapshots/rootfs/snapshot-{tmp}")
+    os.system(f"umount /.snapshots/rootfs/snapshot-{tmp}/* > /dev/null 2>&1")
+    os.system(f"umount /.snapshots/rootfs/snapshot-{tmp} > /dev/null 2>&1")
+    #os.system(f"chattr -RV +i /.snapshots/rootfs/snapshot-{tmp}/usr > /dev/null 2>&1")
+
+# Install packages
+def install(snapshot,pkg):
+    if not (os.path.exists(f"/.snapshots/rootfs/snapshot-{snapshot}")):
+        print("cannot install, snapshot doesn't exist")
+    elif snapshot == "0":
+        print("changing base image is not allowed")
+    else:
+        prepare(snapshot)
+        excode = str(os.system(f"chroot /.snapshots/rootfs/snapshot-chr{snapshot} pacman -S {pkg} --overwrite '/var/*'"))
+        if int(excode) == 0:
+            posttrans(snapshot)
+            print(f"snapshot {snapshot} updated successfully")
+        else:
+            print("install failed, changes were discarded")
+
+# Remove packages
+def remove(snapshot,pkg):
+    if not (os.path.exists(f"/.snapshots/rootfs/snapshot-{snapshot}")):
+        print("cannot remove, snapshot doesn't exist")
+    elif snapshot == "0":
+        print("changing base image is not allowed")
+    else:
+        prepare(snapshot)
+        excode = str(os.system(f"chroot /.snapshots/rootfs/snapshot-chr{snapshot} pacman --noconfirm -Rns {pkg}"))
+        if int(excode) == 0:
+            posttrans(snapshot)
+            print(f"snapshot {snapshot} updated successfully")
+        else:
+            print("remove failed, changes were discarded")
+
+# Delete tree or branch
+def delete(snapshot):
+    print(f"Are you sure you want to delete snapshot {snapshot}? (y/N)")
+    choice = input("> ")
+    run = True
+    if choice.casefold() != "y":
+        print("Aborted")
+        run = False
+    if not (os.path.exists(f"/.snapshots/rootfs/snapshot-{snapshot}")):
+        print("cannot delete, tree doesn't exist")
+    elif snapshot == "0":
+        print("changing base image is not allowed")
+    elif run == True:
+        children = return_children(fstree,snapshot)
+        os.system(f"btrfs sub del /.snapshots/boot/boot-{snapshot} >/dev/null 2>&1")
+        os.system(f"btrfs sub del /.snapshots/etc/etc-{snapshot} >/dev/null 2>&1")
+        os.system(f"btrfs sub del /.snapshots/var/var-{snapshot} >/dev/null 2>&1")
+        os.system(f"btrfs sub del /.snapshots/rootfs/snapshot-{snapshot} >/dev/null 2>&1")
+        for child in children: # This deletes the node itself along with it's children
+            os.system(f"btrfs sub del /.snapshots/boot/boot-{child} >/dev/null 2>&1")
+            os.system(f"btrfs sub del /.snapshots/etc/etc-{child} >/dev/null 2>&1")
+            os.system(f"btrfs sub del /.snapshots/var/var-{child} >/dev/null 2>&1")
+            os.system(f"btrfs sub del /.snapshots/rootfs/snapshot-{child} >/dev/null 2>&1")
+        remove_node(fstree,snapshot) # Remove node from tree or root
+        write_tree(fstree)
+        print(f"snapshot {snapshot} removed")
+
+# Update base
+def update_base():
+    prepare("0")
+    os.system(f"chroot /.snapshots/rootfs/snapshot-chr0 pacman -Syyu")
+    posttrans("0")
+
+# Prepare snapshot to chroot dir to install or chroot into
+def prepare(snapshot):
+    unchr(snapshot)
+    part = get_part()
+    etc = snapshot
+    os.system(f"btrfs sub snap /.snapshots/rootfs/snapshot-{snapshot} /.snapshots/rootfs/snapshot-chr{snapshot} >/dev/null 2>&1")
+    os.system(f"btrfs sub snap /.snapshots/etc/etc-{snapshot} /.snapshots/etc/etc-chr{snapshot} >/dev/null 2>&1")
+    os.system(f"mkdir -p /.snapshots/var/var-chr{snapshot} >/dev/null 2>&1")
+    os.system(f"mount --bind /.snapshots/rootfs/snapshot-chr{snapshot} /.snapshots/rootfs/snapshot-chr{snapshot} >/dev/null 2>&1") # Pacman gets weird when chroot directory is not a mountpoint, so this mount is necessary
+    os.system(f"mount --bind /var /.snapshots/rootfs/snapshot-chr{snapshot}/var >/dev/null 2>&1")
+    os.system(f"mount --rbind /dev /.snapshots/rootfs/snapshot-chr{snapshot}/dev >/dev/null 2>&1")
+    os.system(f"mount --rbind /sys /.snapshots/rootfs/snapshot-chr{snapshot}/sys >/dev/null 2>&1")
+    os.system(f"mount --rbind /tmp /.snapshots/rootfs/snapshot-chr{snapshot}/tmp >/dev/null 2>&1")
+    os.system(f"mount --rbind /proc /.snapshots/rootfs/snapshot-chr{snapshot}/proc >/dev/null 2>&1")
+    #os.system(f"chmod 0755 /.snapshots/rootfs/snapshot-chr/var >/dev/null 2>&1") # For some reason the permission needs to be set here
+    os.system(f"btrfs sub snap /.snapshots/boot/boot-{snapshot} /.snapshots/boot/boot-chr{snapshot} >/dev/null 2>&1")
+    os.system(f"cp -r --reflink=auto /.snapshots/etc/etc-chr{snapshot}/* /.snapshots/rootfs/snapshot-chr{snapshot}/etc >/dev/null 2>&1")
+    os.system(f"cp -r --reflink=auto /.snapshots/boot/boot-chr{snapshot}/* /.snapshots/rootfs/snapshot-chr{snapshot}/boot >/dev/null 2>&1")
+    #os.system(f"rm -rf /.snapshots/rootfs/snapshot-chr{snapshot}/var/lib/pacman/* >/dev/null 2>&1")
+    os.system(f"rm -rf /.snapshots/rootfs/snapshot-chr{snapshot}/var/lib/systemd/* >/dev/null 2>&1")
+    #os.system(f"cp -r --reflink=auto /.snapshots/var/var-{snapshot}/lib/pacman/* /.snapshots/rootfs/snapshot-chr{snapshot}/var/lib/pacman/ >/dev/null 2>&1")
+    os.system(f"cp -r --reflink=auto /.snapshots/var/var-{snapshot}/lib/systemd/* /.snapshots/rootfs/snapshot-chr{snapshot}/var/lib/systemd/ >/dev/null 2>&1")
+    os.system(f"mount --bind /home /.snapshots/rootfs/snapshot-chr{snapshot}/home >/dev/null 2>&1")
+    os.system(f"mount --rbind /run /.snapshots/rootfs/snapshot-chr{snapshot}/run >/dev/null 2>&1")
+    os.system(f"cp /etc/machine-id /.snapshots/rootfs/snapshot-chr{snapshot}/etc/machine-id")
+    os.system(f"mount --bind /etc/resolv.conf /.snapshots/rootfs/snapshot-chr{snapshot}/etc/resolv.conf >/dev/null 2>&1")
+
+# Post transaction function, copy from chroot dirs back to read only image dir
+def posttrans(snapshot):
+    etc = snapshot
+    tmp = get_tmp()
+    os.system(f"umount /.snapshots/rootfs/snapshot-chr{snapshot} >/dev/null 2>&1")
+    os.system(f"umount /.snapshots/rootfs/snapshot-chr{snapshot}/etc/resolv.conf >/dev/null 2>&1")
+    os.system(f"umount /.snapshots/rootfs/snapshot-chr{snapshot}/home >/dev/null 2>&1")
+    os.system(f"umount /.snapshots/rootfs/snapshot-chr{snapshot}/run >/dev/null 2>&1")
+    os.system(f"umount /.snapshots/rootfs/snapshot-chr{snapshot}/dev >/dev/null 2>&1")
+    os.system(f"umount /.snapshots/rootfs/snapshot-chr{snapshot}/sys >/dev/null 2>&1")
+    os.system(f"umount /.snapshots/rootfs/snapshot-chr{snapshot}/proc >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.snapshots/rootfs/snapshot-{snapshot} >/dev/null 2>&1")
+    os.system(f"rm -rf /.snapshots/etc/etc-chr{snapshot}/* >/dev/null 2>&1")
+    os.system(f"cp -r --reflink=auto /.snapshots/rootfs/snapshot-chr{snapshot}/etc/* /.snapshots/etc/etc-chr{snapshot} >/dev/null 2>&1")
+    os.system(f"rm -rf /.snapshots/var/var-chr{snapshot}/* >/dev/null 2>&1")
+    os.system(f"mkdir -p /.snapshots/var/var-chr{snapshot}/lib/systemd >/dev/null 2>&1")
+    #os.system(f"mkdir -p /.snapshots/var/var-chr{snapshot}/lib/pacman >/dev/null 2>&1")
+    os.system(f"cp -r --reflink=auto /.snapshots/rootfs/snapshot-chr{snapshot}/var/lib/systemd/* /.snapshots/var/var-chr{snapshot}/lib/systemd >/dev/null 2>&1")
+    #os.system(f"cp -r --reflink=auto /.snapshots/rootfs/snapshot-chr{snapshot}/var/lib/pacman/* /.snapshots/var/var-chr{snapshot}/lib/pacman >/dev/null 2>&1")
+    os.system(f"cp -r -n --reflink=auto /.snapshots/rootfs/snapshot-chr{snapshot}/var/cache/pacman/pkg/* /var/cache/pacman/pkg/ >/dev/null 2>&1")
+    os.system(f"rm -rf /.snapshots/boot/boot-chr{snapshot}/* >/dev/null 2>&1")
+    os.system(f"cp -r --reflink=auto /.snapshots/rootfs/snapshot-chr{snapshot}/boot/* /.snapshots/boot/boot-chr{snapshot} >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.snapshots/etc/etc-{etc} >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.snapshots/var/var-{etc} >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.snapshots/boot/boot-{etc} >/dev/null 2>&1")
+    os.system(f"btrfs sub snap -r /.snapshots/etc/etc-chr{snapshot} /.snapshots/etc/etc-{etc} >/dev/null 2>&1")
+    os.system(f"btrfs sub create /.snapshots/var/var-{etc} >/dev/null 2>&1")
+    os.system(f"mkdir -p /.snapshots/var/var-{etc}/lib/systemd >/dev/null 2>&1")
+    #os.system(f"mkdir -p /.snapshots/var/var-{etc}/lib/pacman >/dev/null 2>&1")
+    os.system(f"cp --reflink=auto -r /.snapshots/var/var-chr{snapshot}/lib/systemd/* /.snapshots/var/var-{etc}/lib/systemd >/dev/null 2>&1")
+    #os.system(f"cp --reflink=auto -r /.snapshots/var/var-chr{snapshot}/lib/pacman/* /.snapshots/var/var-{etc}/lib/pacman >/dev/null 2>&1")
+    #os.system(f"rm -rf /var/lib/pacman/* >/dev/null 2>&1")
+    #os.system(f"cp --reflink=auto -r /.snapshots/rootfs/snapshot-{tmp}/var/lib/pacman/* /var/lib/pacman >/dev/null 2>&1")
+    os.system(f"rm -rf /var/lib/systemd/* >/dev/null 2>&1")
+    os.system(f"cp --reflink=auto -r /.snapshots/rootfs/snapshot-{tmp}/var/lib/systemd/* /var/lib/systemd >/dev/null 2>&1")
+    #os.system(f"cp --reflink=auto -r -n /.snapshots/rootfs/snapshot-chr{snapshot}/var/lib/* /var/lib/ >/dev/null 2>&1")
+    #os.system(f"cp --reflink=auto -r -n /.snapshots/rootfs/snapshot-chr{snapshot}/var/games/* /var/games/ >/dev/null 2>&1")
+    os.system(f"btrfs sub snap -r /.snapshots/rootfs/snapshot-chr{snapshot} /.snapshots/rootfs/snapshot-{snapshot} >/dev/null 2>&1")
+#    os.system(f"btrfs sub snap -r /.snapshots/var/var-chr{snapshot} /.snapshots/var/var-{etc} >/dev/null 2>&1")
+    os.system(f"btrfs sub snap -r /.snapshots/boot/boot-chr{snapshot} /.snapshots/boot/boot-{etc} >/dev/null 2>&1")
+    unchr(snapshot)
+
+# Upgrade snapshot
+def upgrade(snapshot):
+    if not (os.path.exists(f"/.snapshots/rootfs/snapshot-{snapshot}")):
+        print("cannot upgrade, snapshot doesn't exist")
+    elif snapshot == "0":
+        print("changing base image is not allowed")
+    else:
+        prepare(snapshot)
+        excode = str(os.system(f"chroot /.snapshots/rootfs/snapshot-chr{snapshot} pacman -Syyu")) # Default upgrade behaviour is now "safe" update, meaning failed updates get fully discarded
+        if int(excode) == 0:
+            posttrans(snapshot)
+            print(f"snapshot {snapshot} updated successfully")
+        else:
+            print("update failed, changes were discarded")
+
+# Noninteractive update
+def autoupgrade(snapshot):
+    prepare(snapshot)
+    excode = str(os.system(f"chroot /.snapshots/rootfs/snapshot-chr{snapshot} pacman --noconfirm -Syyu"))
+    if int(excode) == 0:
+        posttrans(snapshot)
+        os.system("echo 0 > /.snapshots/ast/upstate")
+        os.system("echo $(date) >> /.snapshots/ast/upstate")
+    else:
+        os.system("echo 1 > /.snapshots/ast/upstate")
+        os.system("echo $(date) >> /.snapshots/ast/upstate")
+
+# Check if last update was successful
+def check_update():
+    upstate = open("/.snapshots/ast/upstate", "r")
+    line = upstate.readline()
+    date = upstate.readline()
+    if "1" in line:
+        print(f"Last update on {date} failed")
+    if "0" in line:
+        print(f"Last update on {date} completed succesully")
+    upstate.close()
+
+def chroot_check():
+    chroot = True
+    #If following command succeeds with exit code 0, definitely not inside chroot
+    if not os.system("unshare -U true"): chroot = False
+    return(chroot)
+
+# Rollback last booted deployment
+def rollback():
+    tmp = get_tmp()
+    i = findnew()
+    clone_as_tree(tmp)
+    write_desc(i, "rollback")
+    deploy(i)
+
+# Switch between /tmp deployments
+def switchtmp():
+    mount = get_tmp()
+    part = get_part()
+    # This part is useless? Dumb stuff
+    os.system(f"mkdir -p /etc/mnt/boot >/dev/null 2>&1")
+    os.system(f"mount {part} -o subvol=@boot /etc/mnt/boot ") # Mount boot partition for writing
+    if "tmp0" in mount:
+        os.system("cp --reflink=auto -r /.snapshots/rootfs/snapshot-tmp/boot/* /etc/mnt/boot")
+        os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp0,@.snapshots/rootfs/snapshot-tmp,g' /etc/mnt/boot/grub/grub.cfg") # Overwrite grub config boot subvolume
+        os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp0,@.snapshots/rootfs/snapshot-tmp,g' /.snapshots/rootfs/snapshot-tmp/boot/grub/grub.cfg")
+        os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp0,@.snapshots/rootfs/snapshot-tmp,g' /.snapshots/rootfs/snapshot-tmp/etc/fstab") # Write fstab for new deployment
+        os.system("sed -i 's,@.snapshots/etc/etc-tmp0,@.snapshots/etc/etc-tmp,g' /.snapshots/rootfs/snapshot-tmp/etc/fstab")
+#        os.system("sed -i 's,@.snapshots/var/var-tmp0,@.snapshots/var/var-tmp,g' /.snapshots/rootfs/snapshot-tmp/etc/fstab")
+        os.system("sed -i 's,@.snapshots/boot/boot-tmp0,@.snapshots/boot/boot-tmp,g' /.snapshots/rootfs/snapshot-tmp/etc/fstab")
+        sfile = open("/.snapshots/rootfs/snapshot-tmp0/usr/share/ast/snap","r")
+        snap = sfile.readline()
+        snap = snap.replace(" ", "")
+        sfile.close()
+    else:
+        os.system("cp --reflink=auto -r /.snapshots/rootfs/snapshot-tmp0/boot/* /etc/mnt/boot")
+        os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp,@.snapshots/rootfs/snapshot-tmp0,g' /etc/mnt/boot/grub/grub.cfg")
+        os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp,@.snapshots/rootfs/snapshot-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/boot/grub/grub.cfg")
+        os.system("sed -i 's,@.snapshots/rootfs/snapshot-tmp,@.snapshots/rootfs/snapshot-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/etc/fstab")
+        os.system("sed -i 's,@.snapshots/etc/etc-tmp,@.snapshots/etc/etc-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/etc/fstab")
+#        os.system("sed -i 's,@.snapshots/var/var-tmp,@.snapshots/var/var-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/etc/fstab")
+        os.system("sed -i 's,@.snapshots/boot/boot-tmp,@.snapshots/boot/boot-tmp0,g' /.snapshots/rootfs/snapshot-tmp0/etc/fstab")
+        sfile = open("/.snapshots/rootfs/snapshot-tmp/usr/share/ast/snap", "r")
+        snap = sfile.readline()
+        snap = snap.replace(" ","")
+        sfile.close()
+    #
+    snap = snap.replace('\n',"")
+    grubconf = open("/etc/mnt/boot/grub/grub.cfg","r")
+    line = grubconf.readline()
+    while "BEGIN /etc/grub.d/10_linux" not in line:
+        line = grubconf.readline()
+    line = grubconf.readline()
+    gconf = str("")
+    while "}" not in line:
+        gconf = str(gconf)+str(line)
+        line = grubconf.readline()
+    if "snapshot-tmp0" in gconf:
+        gconf = gconf.replace("snapshot-tmp0","snapshot-tmp")
+    else:
+        gconf = gconf.replace("snapshot-tmp", "snapshot-tmp0")
+    if "astOS Linux" in gconf:
+        gconf = re.sub('\d', '', gconf)
+        gconf = gconf.replace(f"astOS Linux snapshot",f"astOS last booted deployment (snapshot {snap})")
+    grubconf.close()
+    os.system("sed -i '$ d' /etc/mnt/boot/grub/grub.cfg")
+    grubconf = open("/etc/mnt/boot/grub/grub.cfg", "a")
+    grubconf.write(gconf)
+    grubconf.write("}\n")
+    grubconf.write("### END /etc/grub.d/41_custom ###")
+    grubconf.close()
+
+    grubconf = open("/.snapshots/rootfs/snapshot-tmp0/boot/grub/grub.cfg","r")
+    line = grubconf.readline()
+    while "BEGIN /etc/grub.d/10_linux" not in line:
+        line = grubconf.readline()
+    line = grubconf.readline()
+    gconf = str("")
+    while "}" not in line:
+        gconf = str(gconf)+str(line)
+        line = grubconf.readline()
+    if "snapshot-tmp0" in gconf:
+        gconf = gconf.replace("snapshot-tmp0","snapshot-tmp")
+    else:
+        gconf = gconf.replace("snapshot-tmp", "snapshot-tmp0")
+    if "astOS Linux" in gconf:
+        gconf = re.sub('\d', '', gconf)
+        gconf = gconf.replace(f"astOS Linux snapshot", f"astOS last booted deployment (snapshot {snap})")
+    grubconf.close()
+    os.system("sed -i '$ d' /.snapshots/rootfs/snapshot-tmp0/boot/grub/grub.cfg")
+    grubconf = open("/.snapshots/rootfs/snapshot-tmp0/boot/grub/grub.cfg", "a")
+    grubconf.write(gconf)
+    grubconf.write("}\n")
+    grubconf.write("### END /etc/grub.d/41_custom ###")
+    grubconf.close()
+    os.system("umount /etc/mnt/boot >/dev/null 2>&1")
+
+# Clear all temporary snapshots
+def tmpclear():
+    os.system(f"btrfs sub del /.snapshots/etc/etc-chr* >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.snapshots/var/var-chr* >/dev/null 2>&1")
+    os.system(f"rm -rf /.snapshots/var/var-chr* >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.snapshots/boot/boot-chr* >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.snapshots/rootfs/snapshot-chr*/* >/dev/null 2>&1")
+    os.system(f"btrfs sub del /.snapshots/rootfs/snapshot-chr* >/dev/null 2>&1")
+
+# Find new unused image dir
+def findnew():
+    i = 0
+    snapshots = os.listdir("/.snapshots/rootfs")
+    etcs = os.listdir("/.snapshots/etc")
+    vars = os.listdir("/.snapshots/var")
+    boots = os.listdir("/.snapshots/boot")
+    snapshots.append(etcs)
+    snapshots.append(vars)
+    snapshots.append(boots)
+    while True:
+        i += 1
+        if str(f"snapshot-{i}") not in snapshots and str(f"etc-{i}") not in snapshots and str(f"var-{i}") not in snapshots and str(f"boot-{i}") not in snapshots:
+            return(i)
+
+# Main function
 def main(args):
-    while True:
-        clear()
-        print("Welcome to the astOS installer!\n\n\n\n\n")
-        print("Select installation profile:\n1. Minimal install - suitable for embedded devices or servers\n2. Desktop install (Gnome) - suitable for workstations\n3. Desktop install (KDE Plasma)")
-        InstallProfile = str(input("> "))
-        if InstallProfile == "1":
-            DesktopInstall = 0
+    snapshot = get_snapshot() # Get current snapshot
+    etc = snapshot
+    importer = DictImporter() # Dict importer
+    exporter = DictExporter() # And exporter
+    isChroot = chroot_check()
+    lock = get_lock() # True = locked
+    global fstree # Currently these are global variables, fix sometime
+    global fstreepath # ---
+    fstreepath = str("/.snapshots/ast/fstree") # Path to fstree file
+    fstree = importer.import_(import_tree_file("/.snapshots/ast/fstree")) # Import fstree file
+    # Recognize argument and call appropriate function
+    for arg in args:
+        if isChroot == True and ("--chroot" not in args):
+            print("Please don't use ast inside a chroot")
             break
-        if InstallProfile == "2":
-            DesktopInstall = 1
+        if arg == "new-tree" or arg == "new":
+            args_2 = args
+            args_2.remove(args_2[0])
+            args_2.remove(args_2[0])
+            new_snapshot(str(" ").join(args_2))
+        elif arg == "boot-update" or arg == "boot":
+            update_boot(args[args.index(arg)+1])
+        elif arg == "chroot" or arg == "cr" and (lock != True):
+            ast_lock()
+            chroot(args[args.index(arg)+1])
+            ast_unlock()
+        elif arg == "live-chroot":
+            ast_lock()
+            live_unlock()
+            ast_unlock()
+        elif arg == "install" or (arg == "in") and (lock != True):
+            ast_lock()
+            args_2 = args
+            args_2.remove(args_2[0])
+            args_2.remove(args_2[0])
+            live = False
+            if args_2[0] == "--live":
+                args_2.remove(args_2[0])
+                if args_2[0] == get_snapshot():
+                    live = True
+            csnapshot = args_2[0]
+            args_2.remove(args_2[0])
+            install(csnapshot, str(" ").join(args_2))
+            if live:
+                live_install(str(" ").join(args_2))
+            ast_unlock()
+        elif arg == "run" and (lock != True):
+            ast_lock()
+            args_2 = args
+            args_2.remove(args_2[0])
+            args_2.remove(args_2[0])
+            csnapshot = args_2[0]
+            args_2.remove(args_2[0])
+            chrrun(csnapshot, str(" ").join(args_2))
+            ast_unlock()
+        elif arg == "add-branch" or arg == "branch":
+            extend_branch(args[args.index(arg)+1])
+        elif arg == "tmpclear" or arg == "tmp":
+            tmpclear()
+        elif arg == "clone-branch" or arg == "cbranch":
+            clone_branch(args[args.index(arg)+1])
+        elif arg == "clone-under" or arg == "ubranch":
+            clone_under(args[args.index(arg)+1], args[args.index(arg)+2])
+        elif arg == "clone" or arg == "tree-clone":
+            clone_as_tree(args[args.index(arg)+1])
+        elif arg == "deploy":
+            deploy(args[args.index(arg)+1])
+        elif arg == "rollback":
+            rollback()
+        elif arg == "upgrade" or arg == "up" and (lock != True):
+            ast_lock()
+            upgrade(args[args.index(arg)+1])
+            ast_unlock()
+        elif arg == "etc-update" or arg == "etc" and (lock != True):
+            ast_lock()
+            update_etc()
+            ast_unlock()
+        elif arg == "current" or arg == "c":
+            print(snapshot)
+        elif arg == "rm-snapshot" or arg == "del":
+            delete(args[args.index(arg)+1])
+        elif arg == "remove" and (lock != True):
+            ast_lock()
+            args_2 = args
+            args_2.remove(args_2[0])
+            args_2.remove(args_2[0])
+            csnapshot = args_2[0]
+            args_2.remove(args_2[0])
+            remove(csnapshot, str(" ").join(args_2))
+            ast_unlock()
+        elif arg == "desc" or arg == "description":
+            n_lay = args[args.index(arg)+1]
+            args_2 = args
+            args_2.remove(args_2[0])
+            args_2.remove(args_2[0])
+            args_2.remove(args_2[0])
+            write_desc(n_lay, str(" ").join(args_2))
+        elif arg == "base-update" or arg == "bu" and (lock != True):
+            ast_lock()
+            update_base()
+            ast_unlock()
+        elif arg == "sync" or arg == "tree-sync" and (lock != True):
+            ast_lock()
+            sync_tree(fstree,args[args.index(arg)+1],False)
+            ast_unlock()
+        elif arg == "fsync" or arg == "force-sync" and (lock != True):
+            ast_lock()
+            sync_tree(fstree,args[args.index(arg)+1],True)
+            ast_unlock()
+        elif arg == "auto-upgrade" and (lock != True):
+            ast_lock()
+            autoupgrade(snapshot)
+            ast_unlock()
+        elif arg == "check":
+            check_update()
+        elif arg == "tree-upgrade" or arg == "tupgrade" and (lock != True):
+            ast_lock()
+            upgrade(args[args.index(arg)+1])
+            update_tree(fstree,args[args.index(arg)+1])
+            ast_unlock()
+        elif arg == "tree-run" or arg == "trun" and (lock != True):
+            ast_lock()
+            args_2 = args
+            args_2.remove(args_2[0])
+            args_2.remove(args_2[0])
+            csnapshot = args_2[0]
+            args_2.remove(args_2[0])
+            run_tree(fstree, csnapshot, str(" ").join(args_2))
+            ast_unlock()
+        elif arg == "tree-rmpkg" or arg == "tremove" and (lock != True):
+            ast_lock()
+            args_2 = args
+            args_2.remove(args_2[0])
+            args_2.remove(args_2[0])
+            csnapshot = args_2[0]
+            args_2.remove(args_2[0])
+            remove(csnapshot, str(" ").join(args_2))
+            remove_from_tree(fstree, csnapshot, str(" ").join(args_2))
+            ast_unlock()
+        elif arg  == "tree":
+            show_fstree()
+        elif (lock == True):
+            print("Error, ast is locked. To force unlock use 'rm -rf /var/lib/ast/lock'.")
             break
-        if InstallProfile == "3":
-            DesktopInstall = 2
-            break
+        elif (arg == args[1]):
+            print("Operation not found.")
 
-    clear()
-    while True:
-        print("Select a timezone (type list to list):")
-        zone = input("> ")
-        if zone == "list":
-            os.system("ls /usr/share/zoneinfo | less")
-        else:
-            timezone = str(f"/usr/share/zoneinfo/{zone}")
-            break
-
-    clear()
-    print("Enter hostname:")
-    hostname = input("> ")
-
-    os.system("pacman -S --noconfirm archlinux-keyring")
-    os.system(f"mkfs.btrfs -f {args[1]}")
-    if os.path.exists("/sys/firmware/efi"):
-        efi = True
-    else:
-        efi = False
-#    efi = False #
-    os.system(f"mount {args[1]} /mnt")
-    btrdirs = ["@","@.snapshots","@home","@var","@etc","@boot"]
-    mntdirs = ["",".snapshots","home","var","etc"]
-    for btrdir in btrdirs:
-        os.system(f"btrfs sub create /mnt/{btrdir}")
-    os.system(f"umount /mnt")
-    os.system(f"mount {args[1]} -o subvol=@,compress=zstd,noatime /mnt")
-    for mntdir in mntdirs:
-        os.system(f"mkdir /mnt/{mntdir}")
-        os.system(f"mount {args[1]} -o subvol={btrdirs[mntdirs.index(mntdir)]},compress=zstd,noatime /mnt/{mntdir}")
-    os.system("mkdir -p /mnt/{tmp,root}")
-    os.system("mkdir -p /mnt/.snapshots/{rootfs,etc,var,boot,tmp,root}")
-    if efi:
-        os.system("mkdir /mnt/boot/efi")
-        os.system(f"mount {args[3]} /mnt/boot/efi")
-    os.system("pacstrap /mnt base linux linux-firmware nano python3 python-anytree dhcpcd arch-install-scripts btrfs-progs networkmanager grub")
-    if efi:
-        os.system("pacstrap /mnt efibootmgr")
-    mntdirs_n = mntdirs
-    mntdirs_n.remove("")
-    os.system(f"echo 'UUID=\"{to_uuid(args[1])}\" / btrfs subvol=@,compress=zstd,noatime,ro 0 0' > /mnt/etc/fstab")
-    for mntdir in mntdirs_n:
-        os.system(f"echo 'UUID=\"{to_uuid(args[1])}\" /{mntdir} btrfs subvol=@{mntdir},compress=zstd,noatime 0 0' >> /mnt/etc/fstab")
-    if efi:
-        os.system(f"echo 'UUID=\"{to_uuid(args[3])}\" /boot/efi vfat umask=0077 0 2' >> /mnt/etc/fstab")
-    os.system("echo '/.snapshots/ast/root /root none bind 0 0' >> /mnt/etc/fstab")
-    os.system("echo '/.snapshots/ast/tmp /tmp none bind 0 0' >> /mnt/etc/fstab")
-    astpart = to_uuid(args[1])
-    os.system(f"mkdir -p /mnt/usr/share/ast/db")
-    os.system(f"echo '0' > /mnt/usr/share/ast/snap")
-
-    os.system(f"echo 'NAME=\"astOS\"' > /mnt/etc/os-release")
-    os.system(f"echo 'PRETTY_NAME=\"astOS\"' >> /mnt/etc/os-release")
-    os.system(f"echo 'ID=astos' >> /mnt/etc/os-release")
-    os.system(f"echo 'BUILD_ID=rolling' >> /mnt/etc/os-release")
-    os.system(f"echo 'ANSI_COLOR=\"38;2;23;147;209\"' >> /mnt/etc/os-release")
-    os.system(f"echo 'HOME_URL=\"https://github.com/CuBeRJAN/astOS\"' >> /mnt/etc/os-release")
-    os.system(f"echo 'LOGO=astos-logo' >> /mnt/etc/os-release")
-    os.system(f"cp -r /mnt/var/lib/pacman/* /mnt/usr/share/ast/db")
-    os.system(f"sed -i s,\"#DBPath      = /var/lib/pacman/\",\"DBPath      = /usr/share/ast/db/\",g /mnt/etc/pacman.conf")
-    os.system(f"echo 'DISTRIB_ID=\"astOS\"' > /mnt/etc/lsb-release")
-    os.system(f"echo 'DISTRIB_RELEASE=\"rolling\"' >> /mnt/etc/lsb-release")
-    os.system(f"echo 'DISTRIB_DESCRIPTION=astOS' >> /mnt/etc/lsb-release")
-
-    os.system(f"arch-chroot /mnt ln -sf {timezone} /etc/localtime")
-    os.system("echo 'en_US UTF-8' >> /mnt/etc/locale.gen")
-    #os.system("sed -i s/'^#'// /mnt/etc/locale.gen")
-    #os.system("sed -i s/'^ '/'#'/ /mnt/etc/locale.gen")
-    os.system(f"arch-chroot /mnt locale-gen")
-    os.system(f"arch-chroot /mnt hwclock --systohc")
-    os.system(f"echo 'LANG=en_US.UTF-8' > /mnt/etc/locale.conf")
-    os.system(f"echo {hostname} > /mnt/etc/hostname")
-    
-    os.system("sed -i '0,/@/{s,@,@.snapshots/rootfs/snapshot-tmp,}' /mnt/etc/fstab")
-    os.system("sed -i '0,/@etc/{s,@etc,@.snapshots/etc/etc-tmp,}' /mnt/etc/fstab")
-#    os.system("sed -i '0,/@var/{s,@var,@.snapshots/var/var-tmp,}' /mnt/etc/fstab")
-    os.system("mkdir -p /mnt/.snapshots/ast/images")
-    os.system("arch-chroot /mnt btrfs sub set-default /.snapshots/rootfs/snapshot-tmp")
-    clear()
-    os.system("arch-chroot /mnt passwd")
-    os.system("arch-chroot /mnt ln -s /.snapshots/ast /var/lib/ast")
-    while True:
-        print("did your password set properly (y/n)?")
-        reply = input("> ")
-        if reply.casefold() == "y":
-            break
-        else:
-            os.system("arch-chroot /mnt passwd")
-    os.system("arch-chroot /mnt systemctl enable NetworkManager")
-    os.system("mkdir -p /mnt/.snapshots/{ast,boot,etc,rootfs,var}")
-    os.system("echo {\\'name\\': \\'root\\', \\'children\\': [{\\'name\\': \\'0\\'}]} > /mnt/.snapshots/ast/fstree")
-    if DesktopInstall:
-        os.system("echo {\\'name\\': \\'root\\', \\'children\\': [{\\'name\\': \\'0\\'},{\\'name\\': \\'1\\'}]} > /mnt/.snapshots/ast/fstree")
-        os.system(f"echo '{astpart}' > /mnt/.snapshots/ast/part")
-    os.system(f"arch-chroot /mnt sed -i s,Arch,astOS,g /etc/default/grub")
-    os.system(f"arch-chroot /mnt grub-install {args[2]}")
-    os.system(f"arch-chroot /mnt grub-mkconfig {args[2]} -o /boot/grub/grub.cfg")
-    os.system("sed -i '0,/subvol=@/{s,subvol=@,subvol=@.snapshots/rootfs/snapshot-tmp,g}' /mnt/boot/grub/grub.cfg")
-    os.system("cp ./astpk.py /mnt/usr/local/sbin/ast")
-    os.system("arch-chroot /mnt chmod +x /usr/local/sbin/ast")
-    os.system("btrfs sub snap -r /mnt /mnt/.snapshots/rootfs/snapshot-0")
-    os.system("btrfs sub create /mnt/.snapshots/etc/etc-tmp")
-    os.system("btrfs sub create /mnt/.snapshots/var/var-tmp")
-#    os.system("cp --reflink=auto -r /mnt/var/* /mnt/.snapshots/var/var-tmp")
-    os.system("mkdir -p /mnt/.snapshots/var/var-tmp/lib/{pacman,systemd}")
-    os.system("cp --reflink=auto -r /mnt/var/lib/pacman/* /mnt/.snapshots/var/var-tmp/lib/pacman/")
-    os.system("cp --reflink=auto -r /mnt/boot/* /mnt/.snapshots/rootfs/snapshot-0/boot/")
-    os.system("cp --reflink=auto -r /mnt/var/lib/systemd/* /mnt/.snapshots/var/var-tmp/lib/systemd/")
-    os.system("cp --reflink=auto -r /mnt/etc/* /mnt/.snapshots/etc/etc-tmp")
-    os.system(f"mount {args[2]} -o subvol=@boot /mnt/boot")
-    os.system(f"cp -r /mnt/.snapshots/rootfs/snapshot-0/boot/grub/ /mnt/boot/")
-    os.system(f"umount /mnt/boot")
-    os.system("btrfs sub snap -r /mnt/.snapshots/var/var-tmp /mnt/.snapshots/var/var-0")
-    os.system("btrfs sub snap -r /mnt/.snapshots/etc/etc-tmp /mnt/.snapshots/etc/etc-0")
-    os.system(f"echo '{astpart}' > /mnt/.snapshots/ast/part")
-    if DesktopInstall == 1:
-        os.system(f"echo '1' > /mnt/usr/share/ast/snap")
-        os.system("pacstrap /mnt flatpak gnome gnome-extra gnome-themes-extra gdm pipewire pipewire-pulse sudo")
-        clear()
-        print("Enter username (all lowercase, max 8 letters)")
-        username = input("> ")
-        while True:
-            print("did your set username properly (y/n)?")
-            reply = input("> ")
-            if reply.casefold() == "y":
-                break
-            else:
-                print("Enter username (all lowercase, max 8 letters)")
-                username = input("> ")
-        os.system(f"arch-chroot /mnt useradd {username}")
-        os.system(f"arch-chroot /mnt passwd {username}")
-        while True:
-            print("did your password set properly (y/n)?")
-            reply = input("> ")
-            if reply.casefold() == "y":
-                break
-            else:
-                os.system(f"arch-chroot /mnt passwd {username}")
-        os.system(f"arch-chroot /mnt usermod -aG audio,input,video,wheel {username}")
-        os.system(f"arch-chroot /mnt passwd -l root")
-        os.system(f"chmod +w /mnt/etc/sudoers")
-        os.system(f"echo '%wheel ALL=(ALL:ALL) ALL' >> /mnt/etc/sudoers")
-        os.system(f"chmod -w /mnt/etc/sudoers")
-        os.system(f"arch-chroot /mnt mkdir /home/{username}")
-        os.system(f"echo 'export XDG_RUNTIME_DIR=\"/run/user/1000\"' >> /home/{username}/.bashrc")
-        os.system(f"arch-chroot /mnt chown -R {username} /home/{username}")
-        os.system(f"arch-chroot /mnt systemctl enable gdm")
-        os.system(f"cp -r /mnt/var/lib/pacman/* /mnt/usr/share/ast/db")
-
-        os.system("btrfs sub snap -r /mnt /mnt/.snapshots/rootfs/snapshot-1")
-        os.system("btrfs sub del /mnt/.snapshots/etc/etc-tmp")
-        os.system("btrfs sub del /mnt/.snapshots/var/var-tmp")
-        os.system("btrfs sub create /mnt/.snapshots/etc/etc-tmp")
-        os.system("btrfs sub create /mnt/.snapshots/var/var-tmp")
-        #    os.system("cp --reflink=auto -r /mnt/var/* /mnt/.snapshots/var/var-tmp")
-        os.system("mkdir -p /mnt/.snapshots/var/var-tmp/lib/{pacman,systemd}")
-        os.system("cp --reflink=auto -r /mnt/var/lib/pacman/* /mnt/.snapshots/var/var-tmp/lib/pacman/")
-        os.system("cp --reflink=auto -r /mnt/var/lib/systemd/* /mnt/.snapshots/var/var-tmp/lib/systemd/")
-        os.system("cp --reflink=auto -r /mnt/etc/* /mnt/.snapshots/etc/etc-tmp")
-        os.system("btrfs sub snap -r /mnt/.snapshots/var/var-tmp /mnt/.snapshots/var/var-1")
-        os.system("btrfs sub snap -r /mnt/.snapshots/etc/etc-tmp /mnt/.snapshots/etc/etc-1")
-        os.system("btrfs sub snap /mnt/.snapshots/rootfs/snapshot-1 /mnt/.snapshots/rootfs/snapshot-tmp")
-    elif DesktopInstall == 2:
-        os.system(f"echo '1' > /mnt/usr/share/ast/snap")
-        os.system("pacstrap /mnt flatpak plasma xorg kde-applications sddm pipewire pipewire-pulse sudo")
-        clear()
-        print("Enter username (all lowercase, max 8 letters)")
-        username = input("> ")
-        while True:
-            print("did your set username properly (y/n)?")
-            reply = input("> ")
-            if reply.casefold() == "y":
-                break
-            else:
-                print("Enter username (all lowercase, max 8 letters)")
-                username = input("> ")
-        os.system(f"arch-chroot /mnt useradd {username}")
-        os.system(f"arch-chroot /mnt passwd {username}")
-        while True:
-            print("did your password set properly (y/n)?")
-            reply = input("> ")
-            if reply.casefold() == "y":
-                break
-            else:
-                os.system(f"arch-chroot /mnt passwd {username}")
-        os.system(f"arch-chroot /mnt usermod -aG audio,input,video,wheel {username}")
-        os.system(f"arch-chroot /mnt passwd -l root")
-        os.system(f"chmod +w /mnt/etc/sudoers")
-        os.system(f"echo '%wheel ALL=(ALL:ALL) ALL' >> /mnt/etc/sudoers")
-        os.system(f"echo '[Theme]' > /mnt/etc/sddm.conf")
-        os.system(f"echo 'Current=breeze' >> /mnt/etc/sddm.conf")
-        os.system(f"chmod -w /mnt/etc/sudoers")
-        os.system(f"arch-chroot /mnt mkdir /home/{username}")
-        os.system(f"echo 'export XDG_RUNTIME_DIR=\"/run/user/1000\"' >> /home/{username}/.bashrc")
-        os.system(f"arch-chroot /mnt chown -R {username} /home/{username}")
-        os.system(f"arch-chroot /mnt systemctl enable sddm")
-        os.system(f"cp -r /mnt/var/lib/pacman/* /mnt/usr/share/ast/db")
-
-        os.system("btrfs sub snap -r /mnt /mnt/.snapshots/rootfs/snapshot-1")
-        os.system("btrfs sub del /mnt/.snapshots/etc/etc-tmp")
-        os.system("btrfs sub del /mnt/.snapshots/var/var-tmp")
-        os.system("btrfs sub create /mnt/.snapshots/etc/etc-tmp")
-        os.system("btrfs sub create /mnt/.snapshots/var/var-tmp")
-        #    os.system("cp --reflink=auto -r /mnt/var/* /mnt/.snapshots/var/var-tmp")
-        os.system("mkdir -p /mnt/.snapshots/var/var-tmp/lib/{pacman,systemd}")
-        os.system("cp --reflink=auto -r /mnt/var/lib/pacman/* /mnt/.snapshots/var/var-tmp/lib/pacman/")
-        os.system("cp --reflink=auto -r /mnt/var/lib/systemd/* /mnt/.snapshots/var/var-tmp/lib/systemd/")
-        os.system("cp --reflink=auto -r /mnt/etc/* /mnt/.snapshots/etc/etc-tmp")
-        os.system("btrfs sub snap -r /mnt/.snapshots/var/var-tmp /mnt/.snapshots/var/var-1")
-        os.system("btrfs sub snap -r /mnt/.snapshots/etc/etc-tmp /mnt/.snapshots/etc/etc-1")
-        os.system("btrfs sub snap /mnt/.snapshots/rootfs/snapshot-1 /mnt/.snapshots/rootfs/snapshot-tmp")
-    else:
-        os.system("btrfs sub snap /mnt/.snapshots/rootfs/snapshot-0 /mnt/.snapshots/rootfs/snapshot-tmp")
-
-    if DesktopInstall:
-        os.system("cp --reflink=auto -r /mnt/boot/* /mnt/.snapshots/rootfs/snapshot-1/boot/")
-        os.system(f"mount {args[2]} -o subvol=@boot /mnt/boot")
-        os.system(f"cp -r /mnt/.snapshots/rootfs/snapshot-1/boot/grub/ /mnt/boot/")
-        os.system(f"umount /mnt/boot")
-    os.system("cp -r /mnt/root/* /mnt/.snapshots/root/")
-    os.system("cp -r /mnt/root/* /mnt/.snapshots/tmp/")
-    os.system("rm -rf /mnt/root/*")
-    os.system("rm -rf /mnt/tmp/*")
-#    os.system("umount /mnt/var")
-    if efi:
-        os.system("umount /mnt/boot/efi")
-    os.system("umount /mnt/boot")
-#    os.system("mkdir /mnt/.snapshots/var/var-tmp")
-#    os.system(f"mount {args[1]} -o subvol=@var,compress=zstd,noatime /mnt/.snapshots/var/var-tmp")
-#    os.system("cp --reflink=auto -r /mnt/.snapshots/var/var-tmp/* /mnt/var")
-    os.system("umount /mnt/etc")
-#    os.system("mkdir /mnt/.snapshots/etc/etc-tmp")
-    os.system(f"mount {args[1]} -o subvol=@etc,compress=zstd,noatime /mnt/.snapshots/etc/etc-tmp")
-    os.system("cp --reflink=auto -r /mnt/.snapshots/etc/etc-tmp/* /mnt/etc")
-    if DesktopInstall:
-        os.system("cp --reflink=auto -r /mnt/.snapshots/etc/etc-1/* /mnt/.snapshots/rootfs/snapshot-tmp/etc")
-        os.system("cp --reflink=auto -r /mnt/.snapshots/var/var-1/* /mnt/.snapshots/rootfs/snapshot-tmp/var")
-    else:
-        os.system("cp --reflink=auto -r /mnt/.snapshots/etc/etc-0/* /mnt/.snapshots/rootfs/snapshot-tmp/etc")
-        os.system("cp --reflink=auto -r /mnt/.snapshots/var/var-0/* /mnt/.snapshots/rootfs/snapshot-tmp/var")
-
-    os.system("umount -R /mnt")
-    os.system(f"mount {args[1]} /mnt")
-    os.system("btrfs sub del /mnt/@")
-    os.system("umount -R /mnt")
-    clear()
-    print("Installation complete")
-    print("You can reboot now :)")
-
+# Call main
 main(args)
