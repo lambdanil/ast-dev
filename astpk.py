@@ -546,6 +546,7 @@ def prepare(snapshot):
     os.system(f"mount --bind /home /.snapshots/rootfs/snapshot-chr{snapshot}/home >/dev/null 2>&1")
     os.system(f"mount --rbind /run /.snapshots/rootfs/snapshot-chr{snapshot}/run >/dev/null 2>&1")
     os.system(f"cp /etc/machine-id /.snapshots/rootfs/snapshot-chr{snapshot}/etc/machine-id")
+    os.system(f"mkdir -p /.snapshots/rootfs/snapshot-chr{snapshot}/.snapshots/ast && cp -f /.snapshots/ast/fstree /.snapshots/rootfs/snapshot-chr{snapshot}/.snapshots/ast/")
     os.system(f"mount --bind /etc/resolv.conf /.snapshots/rootfs/snapshot-chr{snapshot}/etc/resolv.conf >/dev/null 2>&1")
 
 # Post transaction function, copy from chroot dirs back to read only image dir
@@ -578,6 +579,7 @@ def posttrans(snapshot):
     os.system(f"mkdir -p /.snapshots/var/var-{etc}/lib/systemd >/dev/null 2>&1")
     #os.system(f"mkdir -p /.snapshots/var/var-{etc}/lib/pacman >/dev/null 2>&1")
     os.system(f"cp --reflink=auto -r /.snapshots/var/var-chr{snapshot}/lib/systemd/* /.snapshots/var/var-{etc}/lib/systemd >/dev/null 2>&1")
+    os.system(f"cp --reflink=auto -r /.snapshots/rootfs/snapshot-chr{snapshot}/.snapshots/ast/fstree /.snapshots/ast/ >/dev/null 2>&1")
     #os.system(f"cp --reflink=auto -r /.snapshots/var/var-chr{snapshot}/lib/pacman/* /.snapshots/var/var-{etc}/lib/pacman >/dev/null 2>&1")
     #os.system(f"rm -rf /var/lib/pacman/* >/dev/null 2>&1")
     #os.system(f"cp --reflink=auto -r /.snapshots/rootfs/snapshot-{tmp}/var/lib/pacman/* /var/lib/pacman >/dev/null 2>&1")
