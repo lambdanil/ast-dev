@@ -35,7 +35,7 @@ It doesn't use it's own package format or package manager, instead relying on [p
 **This has several advantages:**
 
 - Security
-  - Even if running an application with elevated permissions, it cannot replace system libraries with malicious versions
+  - Running an application even with elevated permissions cannot replace system libraries with malicious versions
 - Stability and reliability
   - Due to the system being mounted as read only, it's not possible to accidentally overwrite system files
   - If the system runs into issues, you can easily rollback the last working snapshot within minutes
