@@ -49,7 +49,7 @@ It doesn't use it's own package format or package manager, instead relying on [p
   - You can also easily try out software without having to worry about breaking your system or polluting it with unnecessary files, for example you can try out a new desktop environment in a snapshot and then delete the snapshot after, without modifying your main system at all
   - This can also be used for multi-user systems, where each user has a completely separate system with different software, and yet they can share certain packages such as kernels and drivers
   - astOS allows you to install software by chrooting into snapshots, therefore you can use software such as the AUR to install additional packages
-  - astOS is, just like Arch, very customizable, you can choose exactly which software you want to use
+  - astOS, just like Arch Linux, is very customizable. You can choose exactly which software you want to use
 
 - Thanks to it's reliabilty and automatic upgrades, astOS is well suitable for single use or embedded devices
 - It also makes for a good workstation or general use distribution utilizing development containers and flatpak for desktop applications
