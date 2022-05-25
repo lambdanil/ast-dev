@@ -396,6 +396,13 @@ ast del <clone of 0>  # Remove temporary snapshot
 sudo chmod 666 /var/run/docker.sock
 ```
 
+- When using a graphical interface for network manager to connect to a network, network passwords aren't remembered in a new deployment
+- We can solve this by updating /etc with the changes made
+
+```
+sudo ast etc-update
+```
+
 - If you run into any issues, report them on [the issues page](https://github.com/CuBeRJAN/astOS/issues)
 
 # Contributing
