@@ -1,5 +1,5 @@
 # astOS (Arch Snapshot Tree OS)
-### An immutable Arch based distribution utilizing btrfs snapshots  
+### An immutable Arch based distribution utilizing btrfs snapshots
 
 ![astos-logo](logo.jpg)
 
@@ -14,6 +14,7 @@
   * [Snapshot management and deployments](https://github.com/CuBeRJAN/astOS#snapshot-management)
   * [Package management](https://github.com/CuBeRJAN/astOS#package-management)
 * [Additional documentation](https://github.com/CuBeRJAN/astOS#additional-documentation)
+  * [Updating the pacman keys](https://github.com/CuBeRJAN/astOS#fixing-pacman-corrupt-packages--key-issues)
   * [Configuring dual boot](https://github.com/CuBeRJAN/astOS#dual-boot)
   * [Updating ast itself](https://github.com/CuBeRJAN/astOS#updating-ast-itself)
 * [Known bugs](https://github.com/CuBeRJAN/astOS#known-bugs)
@@ -22,11 +23,11 @@
 
 ---
 
-## What is astOS?  
+## What is astOS?
 
-astOS is a modern distribution based on [Arch Linux](https://archlinux.org).  
+astOS is a modern distribution based on [Arch Linux](https://archlinux.org).
 Unlike Arch it uses an immutable (read-only) root filesystem.  
-Software is installed and configured into individual snapshot trees, which can then be deployed and booted into.  
+Software is installed and configured into individual snapshot trees, which can then be deployed and booted into.
 It doesn't use it's own package format or package manager, instead relying on [pacman](https://wiki.archlinux.org/title/pacman) from Arch.
 
 
@@ -302,6 +303,14 @@ ast rollback
 * Then you can reboot back to a working system
 
 ## Extras
+
+#### Fixing pacman corrupt packages / key issues
+* Arch's pacman package manager sometimes requires a refresh of the PGP keys
+* To fix this issue we can simply reinstall they arch keyring
+
+```
+ast install <snapshots> archlinux-keyring
+```
 
 #### Dual boot
 * astOS supports dual boot using the GRUB bootloader
