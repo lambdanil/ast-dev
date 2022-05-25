@@ -254,8 +254,8 @@ def main(args):
     else:
         os.system("btrfs sub snap /mnt/.snapshots/rootfs/snapshot-0 /mnt/.snapshots/rootfs/snapshot-tmp")
 
-    os.system("cp -r /mnt/root/* /mnt/.snapshots/root/")
-    os.system("cp -r /mnt/tmp/* /mnt/.snapshots/tmp/")
+    os.system("cp -r /mnt/root/. /mnt/.snapshots/root/")
+    os.system("cp -r /mnt/tmp/. /mnt/.snapshots/tmp/")
     os.system("rm -rf /mnt/root/*")
     os.system("rm -rf /mnt/tmp/*")
 #    os.system("umount /mnt/var")
